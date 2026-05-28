@@ -56,4 +56,22 @@ class HomeViewModel @Inject constructor(
     fun launchWatchNextProgram(programId: Long) {
         watchNextRepository.launchWatchNextProgram(programId)
     }
+
+    fun setAppHidden(packageName: String, isHidden: Boolean) {
+        viewModelScope.launch {
+            appRepository.setAppVisibility(packageName, isHidden)
+        }
+    }
+
+    fun reorderApp(categoryId: Long, packageName: String, fromPosition: Int, toPosition: Int) {
+        viewModelScope.launch {
+            appRepository.reorderApp(categoryId, packageName, fromPosition, toPosition)
+        }
+    }
+
+    fun moveAppToCategory(packageName: String, oldCategoryId: Long, newCategoryId: Long) {
+        viewModelScope.launch {
+            appRepository.moveAppToCategory(packageName, oldCategoryId, newCategoryId)
+        }
+    }
 }

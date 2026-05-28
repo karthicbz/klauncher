@@ -14,11 +14,14 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.karthicbz.klauncher.data.model.AppInfo
 
+import androidx.compose.ui.input.key.*
+
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun AppCard(
     app: AppInfo,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -27,7 +30,16 @@ fun AppCard(
         onClick = onClick,
         modifier = modifier
             .width(160.dp)
-            .aspectRatio(16f / 9f),
+            .aspectRatio(16f / 9f)
+            .onKeyEvent { keyEvent ->
+                if ((keyEvent.key == Key.DirectionCenter || keyEvent.key == Key.Enter) && 
+                    keyEvent.nativeKeyEvent.isLongPress) {
+                    onLongClick()
+                    true
+                } else {
+                    false
+                }
+            },
         shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.medium),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.1f),
         colors = ClickableSurfaceDefaults.colors(

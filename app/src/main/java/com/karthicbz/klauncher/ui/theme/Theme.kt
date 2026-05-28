@@ -7,6 +7,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.tv.material3.*
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
+
 private val LocalThemeConfig = staticCompositionLocalOf { DefaultThemeConfig }
 
 object KLauncherTheme {
@@ -30,9 +33,15 @@ fun KlauncherTheme(
         onPrimary = Color(android.graphics.Color.parseColor(config.colors.onPrimary))
     )
 
+    val shapes = Shapes(
+        medium = RoundedCornerShape(config.shapes.cardCornerRadius.dp),
+        large = RoundedCornerShape((config.shapes.cardCornerRadius * 1.5).toInt().dp)
+    )
+
     CompositionLocalProvider(LocalThemeConfig provides config) {
         MaterialTheme(
             colorScheme = colorScheme,
+            shapes = shapes,
             content = content
         )
     }

@@ -28,9 +28,25 @@ class AppRepository @Inject constructor(
             if (categories.isEmpty()) return@flatMapLatest flowOf(emptyMap())
             
             val flows = categories.map { category ->
+                appDao.getVisibleAppsForCategory(category.id).map { entities ->
+                    category to entities.mapNotNull { entity ->
+                        getAppInfo(entity.packageName, entity.categoryId, entity.isHidden)
+                    }
+                }
+            }
+            
+            combine(flows) { it.toMap() }
+        }
+    }
+
+    fun getCategoriesWithAllApps(): Flow<Map<CategoryEntity, List<AppInfo>>> {
+        return categoryDao.getAllCategories().flatMapLatest { categories ->
+            if (categories.isEmpty()) return@flatMapLatest flowOf(emptyMap())
+            
+            val flows = categories.map { category ->
                 appDao.getAppsForCategory(category.id).map { entities ->
                     category to entities.mapNotNull { entity ->
-                        getAppInfo(entity.packageName, entity.categoryId)
+                        getAppInfo(entity.packageName, entity.categoryId, entity.isHidden)
                     }
                 }
             }
@@ -96,16 +112,62 @@ class AppRepository @Inject constructor(
         }.filter { it.packageName != context.packageName }
     }
 
-    private fun getAppInfo(packageName: String, categoryId: Long): AppInfo? {
+    private fun getAppInfo(packageName: String, categoryId: Long, isHidden: Boolean): AppInfo? {
         return try {
             val appInfo = packageManager.getApplicationInfo(packageName, 0)
             AppInfo(
                 packageName = packageName,
                 label = packageManager.getApplicationLabel(appInfo).toString(),
-                categoryId = categoryId
+                categoryId = categoryId,
+                isHidden = isHidden
             )
         } catch (e: PackageManager.NameNotFoundException) {
             null
+        }
+    }
+
+    suspend fun setAppVisibility(packageName: String, isHidden: Boolean) = withContext(Dispatchers.IO) {
+        appDao.setAppHidden(packageName, isHidden)
+    }
+
+    suspend fun reorderApp(categoryId: Long, packageName: String, fromPosition: Int, toPosition: Int) = withContext(Dispatchers.IO) {
+        val apps = appDao.getAppsForCategory(categoryId).first().toMutableList()
+        val appIndex = apps.indexOfFirst { it.packageName == packageName }
+        if (appIndex != -1 && fromPosition != toPosition && toPosition in 0 until apps.size) {
+            val app = apps.removeAt(appIndex)
+            apps.add(toPosition, app)
+            val updatedApps = apps.mapIndexed { index, appEntity ->
+                appEntity.copy(position = index)
+            }
+            appDao.updateApps(updatedApps)
+        }
+    }
+
+    suspend fun moveAppToCategory(packageName: String, oldCategoryId: Long, newCategoryId: Long) = withContext(Dispatchers.IO) {
+        if (oldCategoryId == newCategoryId) return@withContext
+        
+        val oldCategoryApps = appDao.getAppsForCategory(oldCategoryId).first().toMutableList()
+        val appIndex = oldCategoryApps.indexOfFirst { it.packageName == packageName }
+        if (appIndex != -1) {
+            val appToMove = oldCategoryApps.removeAt(appIndex)
+            
+            val updatedOldApps = oldCategoryApps.mapIndexed { index, appEntity ->
+                appEntity.copy(position = index)
+            }
+            appDao.updateApps(updatedOldApps)
+            
+            appDao.deleteAppFromCategory(packageName, oldCategoryId)
+            
+            val newCategoryApps = appDao.getAppsForCategory(newCategoryId).first()
+            val nextPosition = newCategoryApps.size
+            
+            val newAppEntity = AppEntity(
+                packageName = packageName,
+                categoryId = newCategoryId,
+                position = nextPosition,
+                isHidden = appToMove.isHidden
+            )
+            appDao.insertApps(listOf(newAppEntity))
         }
     }
 

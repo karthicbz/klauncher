@@ -4,12 +4,16 @@ import android.content.Context
 import com.karthicbz.klauncher.ui.theme.BuiltInThemes
 import com.karthicbz.klauncher.ui.theme.DefaultThemeConfig
 import com.karthicbz.klauncher.ui.theme.ThemeConfig
+import com.karthicbz.klauncher.ui.theme.validate
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,5 +54,28 @@ class ThemeRepository @Inject constructor(
 
     fun resetToDefault() {
         applyTheme(DefaultThemeConfig)
+    }
+
+    fun importThemeFromJson(jsonString: String): Result<ThemeConfig> {
+        return try {
+            val config = json.decodeFromString<ThemeConfig>(jsonString)
+            val validated = config.validate()
+            applyTheme(validated)
+            Result.success(validated)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun importThemeFromUrl(urlString: String): Result<ThemeConfig> = withContext(Dispatchers.IO) {
+        try {
+            val jsonString = URL(urlString).readText()
+            val config = json.decodeFromString<ThemeConfig>(jsonString)
+            val validated = config.validate()
+            applyTheme(validated)
+            Result.success(validated)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

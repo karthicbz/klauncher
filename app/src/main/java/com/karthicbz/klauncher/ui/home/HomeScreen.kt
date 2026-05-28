@@ -1,22 +1,19 @@
 package com.karthicbz.klauncher.ui.home
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
-import com.karthicbz.klauncher.ui.home.components.AppCard
-import com.karthicbz.klauncher.ui.home.components.WatchNextCard
-import java.text.SimpleDateFormat
-import java.util.*
+import com.karthicbz.klauncher.data.model.AppInfo
+import com.karthicbz.klauncher.ui.home.components.*
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -25,6 +22,9 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    var reorderingAppPackage by remember { mutableStateOf<String?>(null) }
+    var showMenuForApp by remember { mutableStateOf<AppInfo?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -36,12 +36,25 @@ fun HomeScreen(
                     state = state,
                     onAppClick = { viewModel.launchApp(it) },
                     onProgramClick = { viewModel.launchWatchNextProgram(it) },
-                    onSettingsClick = onNavigateToSettings
+                    onSettingsClick = onNavigateToSettings,
+                    viewModel = viewModel,
+                    reorderingAppPackage = reorderingAppPackage,
+                    onReorderAppPackageChange = { reorderingAppPackage = it },
+                    onShowMenuForApp = { showMenuForApp = it }
                 )
             }
             is HomeUiState.Error -> {
                 ErrorScreen(state.message)
             }
+        }
+
+        if (showMenuForApp != null) {
+            AppContextMenu(
+                app = showMenuForApp!!,
+                onDismissRequest = { showMenuForApp = null },
+                onReorderClick = { reorderingAppPackage = showMenuForApp!!.packageName },
+                onHideClick = { viewModel.setAppHidden(showMenuForApp!!.packageName, true) }
+            )
         }
     }
 }
@@ -52,10 +65,13 @@ private fun HomeContent(
     state: HomeUiState.Success,
     onAppClick: (String) -> Unit,
     onProgramClick: (Long) -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    viewModel: HomeViewModel,
+    reorderingAppPackage: String?,
+    onReorderAppPackageChange: (String?) -> Unit,
+    onShowMenuForApp: (AppInfo?) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top Header
         HomeHeader(onSettingsClick)
 
         LazyColumn(
@@ -63,7 +79,7 @@ private fun HomeContent(
             contentPadding = PaddingValues(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Watch Next Row
+            // Watch Next / Continue Watching Row
             if (state.watchNextPrograms.isNotEmpty()) {
                 item {
                     Column(modifier = Modifier.padding(horizontal = 48.dp)) {
@@ -86,9 +102,9 @@ private fun HomeContent(
                 }
             }
 
-            // App Categories
+            // Categories list
             state.categoriesWithApps.forEach { (category, apps) ->
-                if (apps.isNotEmpty()) {
+                if (apps.isNotEmpty() || category.isSystem) {
                     item {
                         Column(modifier = Modifier.padding(horizontal = 48.dp)) {
                             Text(
@@ -100,9 +116,96 @@ private fun HomeContent(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 items(apps) { app ->
+                                    val isReordering = reorderingAppPackage == app.packageName
                                     AppCard(
                                         app = app,
-                                        onClick = { onAppClick(app.packageName) }
+                                        onClick = {
+                                            if (reorderingAppPackage != null) {
+                                                onReorderAppPackageChange(null)
+                                            } else {
+                                                onAppClick(app.packageName)
+                                            }
+                                        },
+                                        onLongClick = {
+                                            if (reorderingAppPackage == null) {
+                                                onShowMenuForApp(app)
+                                            }
+                                        },
+                                        modifier = Modifier.then(
+                                            if (isReordering) {
+                                                Modifier
+                                                    .border(
+                                                        BorderStroke(
+                                                            3.dp,
+                                                            MaterialTheme.colorScheme.primary
+                                                        ),
+                                                        MaterialTheme.shapes.medium
+                                                    )
+                                                    .onKeyEvent { keyEvent ->
+                                                        if (keyEvent.type == KeyEventType.KeyDown) {
+                                                            when (keyEvent.key) {
+                                                                Key.DirectionLeft -> {
+                                                                    val currentIndex = apps.indexOf(app)
+                                                                    if (currentIndex > 0) {
+                                                                        viewModel.reorderApp(
+                                                                            category.id,
+                                                                            app.packageName,
+                                                                            currentIndex,
+                                                                            currentIndex - 1
+                                                                        )
+                                                                    }
+                                                                    true
+                                                                }
+                                                                Key.DirectionRight -> {
+                                                                    val currentIndex = apps.indexOf(app)
+                                                                    if (currentIndex < apps.size - 1) {
+                                                                        viewModel.reorderApp(
+                                                                            category.id,
+                                                                            app.packageName,
+                                                                            currentIndex,
+                                                                            currentIndex + 1
+                                                                        )
+                                                                    }
+                                                                    true
+                                                                }
+                                                                Key.DirectionUp -> {
+                                                                    val categoriesList = state.categoriesWithApps.keys.toList()
+                                                                    val currentCategoryIndex = categoriesList.indexOf(category)
+                                                                    if (currentCategoryIndex > 0) {
+                                                                        val targetCategory = categoriesList[currentCategoryIndex - 1]
+                                                                        viewModel.moveAppToCategory(
+                                                                            app.packageName,
+                                                                            category.id,
+                                                                            targetCategory.id
+                                                                        )
+                                                                    }
+                                                                    true
+                                                                }
+                                                                Key.DirectionDown -> {
+                                                                    val categoriesList = state.categoriesWithApps.keys.toList()
+                                                                    val currentCategoryIndex = categoriesList.indexOf(category)
+                                                                    if (currentCategoryIndex < categoriesList.size - 1) {
+                                                                        val targetCategory = categoriesList[currentCategoryIndex + 1]
+                                                                        viewModel.moveAppToCategory(
+                                                                            app.packageName,
+                                                                            category.id,
+                                                                            targetCategory.id
+                                                                        )
+                                                                    }
+                                                                    true
+                                                                }
+                                                                Key.DirectionCenter, Key.Enter, Key.Back -> {
+                                                                    onReorderAppPackageChange(null)
+                                                                    true
+                                                                }
+                                                                else -> false
+                                                            }
+                                                        } else false
+                                                    }
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
                                     )
                                 }
                             }
@@ -111,65 +214,5 @@ private fun HomeContent(
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun HomeHeader(onSettingsClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 48.dp, vertical = 24.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Time
-        val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        Text(
-            text = currentTime,
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        // Settings Icon
-        IconButton(onClick = onSettingsClick) {
-            Text("Settings") 
-        }
-    }
-}
-
-@Composable
-private fun LoadingScreen() {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(48.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        repeat(3) {
-            item {
-                Column {
-                    Box(modifier = Modifier.size(200.dp, 30.dp).surfacePlaceholder())
-                    Spacer(modifier = Modifier.height(12.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        items(5) {
-                            Box(modifier = Modifier.size(160.dp, 90.dp).surfacePlaceholder())
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun Modifier.surfacePlaceholder(): Modifier = this.then(
-    Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), MaterialTheme.shapes.medium)
-)
-
-@Composable
-private fun ErrorScreen(message: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Error: $message", color = MaterialTheme.colorScheme.error)
     }
 }
