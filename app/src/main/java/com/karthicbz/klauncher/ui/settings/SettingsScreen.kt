@@ -57,7 +57,8 @@ fun SettingsScreen(
                     colors = ClickableSurfaceDefaults.colors(
                         containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        onSurfaceColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        focusedContentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
                     modifier = Modifier.fillMaxWidth()
