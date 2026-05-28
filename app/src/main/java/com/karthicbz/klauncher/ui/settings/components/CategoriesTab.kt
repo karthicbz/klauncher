@@ -80,7 +80,7 @@ fun CategoriesTab(
                             if (!category.isSystem) {
                                 Button(
                                     onClick = { viewModel.deleteCategory(category) },
-                                    colors = ButtonDefaults.buttonColors(
+                                    colors = ButtonDefaults.colors(
                                         containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
                                         contentColor = MaterialTheme.colorScheme.error
                                     )
