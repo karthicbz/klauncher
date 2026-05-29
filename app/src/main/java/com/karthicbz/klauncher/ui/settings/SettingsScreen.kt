@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
 import com.karthicbz.klauncher.ui.settings.components.*
+import com.karthicbz.klauncher.ui.settings.components.WeatherSettingsTab
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -23,7 +24,7 @@ fun SettingsScreen(
 
     var selectedTab by remember { mutableStateOf(0) }
 
-    val tabs = listOf("Categories", "App Visibility", "Themes & Styles", "Wallpaper", "About")
+    val tabs = listOf("Categories", "App Visibility", "Themes & Styles", "Weather", "Wallpaper", "About")
 
     Row(
         modifier = Modifier
@@ -104,8 +105,9 @@ fun SettingsScreen(
                 0 -> CategoriesTab(categories, viewModel)
                 1 -> AppVisibilityTab(categoriesWithAllApps, viewModel)
                 2 -> ThemesTab(builtInThemes, currentTheme, viewModel)
-                3 -> WallpaperTab()
-                4 -> AboutTab()
+                3 -> WeatherSettingsTab(viewModel)
+                4 -> WallpaperTab()
+                5 -> AboutTab()
             }
         }
     }

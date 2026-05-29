@@ -18,6 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
 import com.karthicbz.klauncher.data.model.AppInfo
 import com.karthicbz.klauncher.ui.home.components.*
+import com.karthicbz.klauncher.ui.home.viewmodel.HomeViewModel as WeatherViewModel
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -26,6 +27,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val weatherViewModel: WeatherViewModel = hiltViewModel()
 
     var reorderingAppPackage by remember { mutableStateOf<String?>(null) }
     var showMenuForApp by remember { mutableStateOf<AppInfo?>(null) }
@@ -41,7 +43,8 @@ fun HomeScreen(
                 viewModel = viewModel,
                 reorderingAppPackage = reorderingAppPackage,
                 onReorderAppPackageChange = { reorderingAppPackage = it },
-                onShowMenuForApp = { showMenuForApp = it }
+                onShowMenuForApp = { showMenuForApp = it },
+                weatherViewModel = weatherViewModel
             )
             is HomeUiState.Error -> ErrorScreen(state.message)
         }
@@ -68,7 +71,8 @@ private fun HomeContent(
     viewModel: HomeViewModel,
     reorderingAppPackage: String?,
     onReorderAppPackageChange: (String?) -> Unit,
-    onShowMenuForApp: (AppInfo?) -> Unit
+    onShowMenuForApp: (AppInfo?) -> Unit,
+    weatherViewModel: com.karthicbz.klauncher.ui.home.viewmodel.HomeViewModel
 ) {
     // Focus request for the very first app card so D-pad works on first frame
     val firstCardFocus = remember { FocusRequester() }
@@ -88,7 +92,11 @@ private fun HomeContent(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HomeHeader(onSettingsClick)
+        val weather by weatherViewModel.weather.collectAsState(initial = null)
+        HomeHeader(
+            onSettingsClick = onSettingsClick,
+            weather = weather
+        )
 
         // LazyColumn with TV Surface cards — D-pad focus handled by TV Material Surface
         LazyColumn(

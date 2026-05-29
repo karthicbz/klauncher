@@ -7,6 +7,7 @@ import com.karthicbz.klauncher.data.model.CategoryEntity
 import com.karthicbz.klauncher.data.model.AppInfo
 import com.karthicbz.klauncher.repository.AppRepository
 import com.karthicbz.klauncher.repository.ThemeRepository
+import com.karthicbz.klauncher.repository.UserPreferencesRepository
 import com.karthicbz.klauncher.ui.theme.ThemeConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,7 +21,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val categoryDao: CategoryDao,
     private val themeRepository: ThemeRepository,
-    private val appRepository: AppRepository
+    private val appRepository: AppRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     val categories: StateFlow<List<CategoryEntity>> = categoryDao.getAllCategories()
@@ -78,6 +80,10 @@ class SettingsViewModel @Inject constructor(
 
     fun selectTheme(theme: ThemeConfig) {
         themeRepository.applyTheme(theme)
+    }
+
+    fun setLocation(lat: Float, lon: Float) {
+        userPreferencesRepository.setLocation(lat, lon)
     }
 
     fun importThemeFromJson(json: String): Result<ThemeConfig> {
