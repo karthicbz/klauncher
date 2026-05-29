@@ -106,6 +106,7 @@ private fun HomeContent(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
                         LazyRow(
+                            contentPadding = PaddingValues(horizontal = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             items(state.watchNextPrograms) { program ->
@@ -130,6 +131,7 @@ private fun HomeContent(
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
                             LazyRow(
+                                contentPadding = PaddingValues(horizontal = 12.dp),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 items(apps) { app ->
