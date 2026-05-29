@@ -33,6 +33,8 @@ class SettingsViewModel @Inject constructor(
 
     val currentTheme = themeRepository.currentTheme
     val builtInThemes = themeRepository.getBuiltInThemes()
+    val latitude = userPreferencesRepository.latitude
+    val longitude = userPreferencesRepository.longitude
 
     fun addCategory(name: String) {
         viewModelScope.launch {
