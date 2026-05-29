@@ -21,7 +21,7 @@ fun AppVisibilityTab(
     Column(modifier = modifier.fillMaxSize()) {
         Text("App Visibility", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Toggle switches to hide or show installed applications on the home screen.",
+            "Toggle to hide or show apps on the home screen.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.padding(bottom = 24.dp)
@@ -41,7 +41,6 @@ fun AppVisibilityTab(
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
-
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 apps.forEach { app ->
                                     Surface(
@@ -49,17 +48,21 @@ fun AppVisibilityTab(
                                             viewModel.setAppHidden(app.packageName, !app.isHidden)
                                         },
                                         shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
+                                        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.02f),
                                         colors = ClickableSurfaceDefaults.colors(
-                                            containerColor = MaterialTheme.colorScheme.surface
+                                            containerColor = MaterialTheme.colorScheme.surface,
+                                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                                         ),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                            modifier = Modifier.padding(
+                                                horizontal = 16.dp, vertical = 12.dp
+                                            ),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Column {
+                                            Column(modifier = Modifier.weight(1f)) {
                                                 Text(app.label, style = MaterialTheme.typography.bodyLarge)
                                                 Text(
                                                     app.packageName,
@@ -67,10 +70,8 @@ fun AppVisibilityTab(
                                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                                                 )
                                             }
-                                            Checkbox(
-                                                checked = !app.isHidden,
-                                                onCheckedChange = null // Click handled by Surface
-                                            )
+                                            // Flat pill toggle — replaces non-TV Checkbox
+                                            VisibilityPill(visible = !app.isHidden)
                                         }
                                     }
                                 }
@@ -80,5 +81,30 @@ fun AppVisibilityTab(
                 }
             }
         }
+    }
+}
+
+/** Flat coloured pill showing Visible/Hidden — zero Material3 dependencies. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun VisibilityPill(visible: Boolean) {
+    val bg = if (visible) MaterialTheme.colorScheme.primary
+             else MaterialTheme.colorScheme.surfaceVariant
+    val fg = if (visible) MaterialTheme.colorScheme.onPrimary
+             else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
+    Surface(
+        onClick = {},
+        shape = ClickableSurfaceDefaults.shape(
+            androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+        ),
+        colors = ClickableSurfaceDefaults.colors(containerColor = bg, focusedContainerColor = bg)
+    ) {
+        Text(
+            text = if (visible) "Visible" else "Hidden",
+            style = MaterialTheme.typography.labelSmall,
+            color = fg,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+        )
     }
 }

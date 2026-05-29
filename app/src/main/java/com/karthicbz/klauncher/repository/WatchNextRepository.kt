@@ -22,8 +22,7 @@ import javax.inject.Singleton
 class WatchNextRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    // Watch Next programs are available from API 26 (Android 8.0)
-    // We use the system URI directly to avoid dependency issues with compat libraries
+    // WatchNextPrograms requires API 26 (Android 8.0)
     private val watchNextUri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         TvContract.WatchNextPrograms.CONTENT_URI
     } else {
@@ -56,10 +55,10 @@ class WatchNextRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
+    @Suppress("DEPRECATION")
     private fun queryWatchNext(): List<WatchNextProgram> {
         val programs = mutableListOf<WatchNextProgram>()
         val uri = watchNextUri ?: return emptyList()
-
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return emptyList()
 
         val projection = arrayOf(
@@ -68,7 +67,10 @@ class WatchNextRepository @Inject constructor(
             TvContract.WatchNextPrograms.COLUMN_TITLE,
             TvContract.WatchNextPrograms.COLUMN_SHORT_DESCRIPTION,
             TvContract.WatchNextPrograms.COLUMN_POSTER_ART_URI,
-            TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS
+            TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS,
+            // Progress tracking columns — available API 26+
+            TvContract.WatchNextPrograms.COLUMN_LAST_PLAYBACK_POSITION_MILLIS,
+            TvContract.WatchNextPrograms.COLUMN_DURATION_MILLIS
         )
 
         try {
@@ -80,6 +82,13 @@ class WatchNextRepository @Inject constructor(
                 "${TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS} DESC"
             )?.use { cursor ->
                 while (cursor.moveToNext()) {
+                    val positionMs = cursor.getLong(6)
+                    val durationMs = cursor.getLong(7)
+                    // Compute 0–100 progress; clamp to valid range
+                    val progress = if (durationMs > 0L) {
+                        ((positionMs.toFloat() / durationMs) * 100).toInt().coerceIn(0, 100)
+                    } else 0
+
                     programs.add(
                         WatchNextProgram(
                             id = cursor.getLong(0),
@@ -87,14 +96,14 @@ class WatchNextRepository @Inject constructor(
                             title = cursor.getString(2),
                             description = cursor.getString(3),
                             posterArtUri = cursor.getString(4),
-                            progress = 0,
+                            progress = progress,
                             lastEngagementTime = cursor.getLong(5)
                         )
                     )
                 }
             }
         } catch (e: Exception) {
-            // Log failure or handle gracefully
+            // Permission not granted or provider unavailable — return empty list
         }
         return programs
     }
@@ -108,7 +117,7 @@ class WatchNextRepository @Inject constructor(
             try {
                 context.startActivity(intent)
             } catch (e: Exception) {
-                // Fallback: search for package or log failure
+                // App that owns this program may have been uninstalled
             }
         }
     }

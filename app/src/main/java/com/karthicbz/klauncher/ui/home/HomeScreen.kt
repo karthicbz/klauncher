@@ -3,14 +3,18 @@ package com.karthicbz.klauncher.ui.home
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.*
+//import androidx.tv.material3.TvLazyRow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+
 import androidx.tv.material3.*
 import com.karthicbz.klauncher.data.model.AppInfo
 import com.karthicbz.klauncher.ui.home.components.*
@@ -28,26 +32,21 @@ fun HomeScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
-            is HomeUiState.Loading -> {
-                LoadingScreen()
-            }
-            is HomeUiState.Success -> {
-                HomeContent(
-                    state = state,
-                    onAppClick = { viewModel.launchApp(it) },
-                    onProgramClick = { viewModel.launchWatchNextProgram(it) },
-                    onSettingsClick = onNavigateToSettings,
-                    viewModel = viewModel,
-                    reorderingAppPackage = reorderingAppPackage,
-                    onReorderAppPackageChange = { reorderingAppPackage = it },
-                    onShowMenuForApp = { showMenuForApp = it }
-                )
-            }
-            is HomeUiState.Error -> {
-                ErrorScreen(state.message)
-            }
+            is HomeUiState.Loading -> LoadingScreen()
+            is HomeUiState.Success -> HomeContent(
+                state = state,
+                onAppClick = { viewModel.launchApp(it) },
+                onProgramClick = { viewModel.launchWatchNextProgram(it) },
+                onSettingsClick = onNavigateToSettings,
+                viewModel = viewModel,
+                reorderingAppPackage = reorderingAppPackage,
+                onReorderAppPackageChange = { reorderingAppPackage = it },
+                onShowMenuForApp = { showMenuForApp = it }
+            )
+            is HomeUiState.Error -> ErrorScreen(state.message)
         }
 
+        // Context menu overlaid on top — flat backdrop, D-pad navigable
         if (showMenuForApp != null) {
             AppContextMenu(
                 app = showMenuForApp!!,
@@ -71,15 +70,33 @@ private fun HomeContent(
     onReorderAppPackageChange: (String?) -> Unit,
     onShowMenuForApp: (AppInfo?) -> Unit
 ) {
+    // Focus request for the very first app card so D-pad works on first frame
+    val firstCardFocus = remember { FocusRequester() }
+    var focusRequested by remember { mutableStateOf(false) }
+
+    val categories = state.categoriesWithApps
+
+    LaunchedEffect(categories) {
+        if (!focusRequested && categories.isNotEmpty()) {
+            try {
+                firstCardFocus.requestFocus()
+                focusRequested = true
+            } catch (_: Exception) {
+                // Composable may not be attached yet — will retry on next emission
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         HomeHeader(onSettingsClick)
 
+        // LazyColumn with TV Surface cards — D-pad focus handled by TV Material Surface
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Watch Next / Continue Watching Row
+            // Continue Watching row
             if (state.watchNextPrograms.isNotEmpty()) {
                 item {
                     Column(modifier = Modifier.padding(horizontal = 48.dp)) {
@@ -102,8 +119,8 @@ private fun HomeContent(
                 }
             }
 
-            // Categories list
-            state.categoriesWithApps.forEach { (category, apps) ->
+            // Category rows
+            categories.entries.forEachIndexed { categoryIndex, (category, apps) ->
                 if (apps.isNotEmpty() || category.isSystem) {
                     item {
                         Column(modifier = Modifier.padding(horizontal = 48.dp)) {
@@ -117,6 +134,10 @@ private fun HomeContent(
                             ) {
                                 items(apps) { app ->
                                     val isReordering = reorderingAppPackage == app.packageName
+                                    // Attach focus requester to the first card of the first category
+                                    val isFirstCard =
+                                        categoryIndex == 0 && apps.indexOf(app) == 0
+
                                     AppCard(
                                         app = app,
                                         onClick = {
@@ -131,81 +152,33 @@ private fun HomeContent(
                                                 onShowMenuForApp(app)
                                             }
                                         },
-                                        modifier = Modifier.then(
-                                            if (isReordering) {
-                                                Modifier
-                                                    .border(
-                                                        BorderStroke(
-                                                            3.dp,
-                                                            MaterialTheme.colorScheme.primary
-                                                        ),
-                                                        MaterialTheme.shapes.medium
-                                                    )
-                                                    .onKeyEvent { keyEvent ->
-                                                        if (keyEvent.type == KeyEventType.KeyDown) {
-                                                            when (keyEvent.key) {
-                                                                Key.DirectionLeft -> {
-                                                                    val currentIndex = apps.indexOf(app)
-                                                                    if (currentIndex > 0) {
-                                                                        viewModel.reorderApp(
-                                                                            category.id,
-                                                                            app.packageName,
-                                                                            currentIndex,
-                                                                            currentIndex - 1
-                                                                        )
-                                                                    }
-                                                                    true
-                                                                }
-                                                                Key.DirectionRight -> {
-                                                                    val currentIndex = apps.indexOf(app)
-                                                                    if (currentIndex < apps.size - 1) {
-                                                                        viewModel.reorderApp(
-                                                                            category.id,
-                                                                            app.packageName,
-                                                                            currentIndex,
-                                                                            currentIndex + 1
-                                                                        )
-                                                                    }
-                                                                    true
-                                                                }
-                                                                Key.DirectionUp -> {
-                                                                    val categoriesList = state.categoriesWithApps.keys.toList()
-                                                                    val currentCategoryIndex = categoriesList.indexOf(category)
-                                                                    if (currentCategoryIndex > 0) {
-                                                                        val targetCategory = categoriesList[currentCategoryIndex - 1]
-                                                                        viewModel.moveAppToCategory(
-                                                                            app.packageName,
-                                                                            category.id,
-                                                                            targetCategory.id
-                                                                        )
-                                                                    }
-                                                                    true
-                                                                }
-                                                                Key.DirectionDown -> {
-                                                                    val categoriesList = state.categoriesWithApps.keys.toList()
-                                                                    val currentCategoryIndex = categoriesList.indexOf(category)
-                                                                    if (currentCategoryIndex < categoriesList.size - 1) {
-                                                                        val targetCategory = categoriesList[currentCategoryIndex + 1]
-                                                                        viewModel.moveAppToCategory(
-                                                                            app.packageName,
-                                                                            category.id,
-                                                                            targetCategory.id
-                                                                        )
-                                                                    }
-                                                                    true
-                                                                }
-                                                                Key.DirectionCenter, Key.Enter, Key.Back -> {
-                                                                    onReorderAppPackageChange(null)
-                                                                    true
-                                                                }
-                                                                else -> false
-                                                            }
-                                                        } else false
-                                                    }
-                                            } else {
-                                                Modifier
-                                            }
-                                        )
+                                        modifier = Modifier
+                                            .then(
+                                                if (isFirstCard) Modifier.focusRequester(firstCardFocus)
+                                                else Modifier
+                                            )
+                                            .then(
+                                                if (isReordering) {
+                                                    Modifier
+                                                        .border(
+                                                            BorderStroke(3.dp, MaterialTheme.colorScheme.primary),
+                                                            MaterialTheme.shapes.medium
+                                                        )
+                                                        .onKeyEvent { keyEvent ->
+                                                            if (keyEvent.type == KeyEventType.KeyDown) {
+                                                                handleReorderKey(
+                                                                    keyEvent = keyEvent,
+                                                                    app = app,
+                                                                    apps = apps,
+                                                                    category = category,
+                                                                    state = state,
+                                                                    viewModel = viewModel,
+                                                                    onReorderAppPackageChange = onReorderAppPackageChange
+                                                                )
+                                                            } else false
+                                                        }
+                                                } else Modifier
+                                            )
                                     )
                                 }
                             }
@@ -214,5 +187,65 @@ private fun HomeContent(
                 }
             }
         }
+    }
+}
+
+/**
+ * Handles D-pad key events during app reorder mode.
+ * Left/Right reorders within the category; Up/Down moves to adjacent category.
+ * Center/Enter/Back exits reorder mode.
+ */
+@OptIn(ExperimentalTvMaterial3Api::class)
+private fun handleReorderKey(
+    keyEvent: KeyEvent,
+    app: AppInfo,
+    apps: List<AppInfo>,
+    category: com.karthicbz.klauncher.data.model.CategoryEntity,
+    state: HomeUiState.Success,
+    viewModel: HomeViewModel,
+    onReorderAppPackageChange: (String?) -> Unit
+): Boolean {
+    val currentIndex = apps.indexOf(app)
+    val categoriesList = state.categoriesWithApps.keys.toList()
+    val currentCategoryIndex = categoriesList.indexOf(category)
+
+    return when (keyEvent.key) {
+        Key.DirectionLeft -> {
+            if (currentIndex > 0) {
+                viewModel.reorderApp(category.id, app.packageName, currentIndex, currentIndex - 1)
+            }
+            true
+        }
+        Key.DirectionRight -> {
+            if (currentIndex < apps.size - 1) {
+                viewModel.reorderApp(category.id, app.packageName, currentIndex, currentIndex + 1)
+            }
+            true
+        }
+        Key.DirectionUp -> {
+            if (currentCategoryIndex > 0) {
+                viewModel.moveAppToCategory(
+                    app.packageName,
+                    category.id,
+                    categoriesList[currentCategoryIndex - 1].id
+                )
+            }
+            true
+        }
+        Key.DirectionDown -> {
+            if (currentCategoryIndex < categoriesList.size - 1) {
+                viewModel.moveAppToCategory(
+                    app.packageName,
+                    category.id,
+                    categoriesList[currentCategoryIndex + 1].id
+                )
+            }
+            true
+        }
+        Key.DirectionCenter, Key.Enter, Key.Back -> {
+            onReorderAppPackageChange(null)
+            true
+        }
+        else -> false
     }
 }

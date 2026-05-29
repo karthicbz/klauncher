@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ThemeConfig(
     val name: String,
+    val version: Int = 1,
     val colors: ThemeColors,
     val shapes: ThemeShapes,
     val spacing: ThemeSpacing
@@ -84,6 +85,7 @@ fun ThemeConfig.validate(): ThemeConfig {
 
     return ThemeConfig(
         name = if (name.isNotBlank()) name else "Unnamed Theme",
+        version = version,
         colors = validatedColors,
         shapes = validatedShapes,
         spacing = validatedSpacing

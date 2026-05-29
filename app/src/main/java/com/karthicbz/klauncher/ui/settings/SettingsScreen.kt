@@ -23,42 +23,41 @@ fun SettingsScreen(
 
     var selectedTab by remember { mutableStateOf(0) }
 
+    val tabs = listOf("Categories", "App Visibility", "Themes & Styles", "Wallpaper", "About")
+
     Row(
         modifier = Modifier
             .fillMaxSize()
             .padding(48.dp),
         horizontalArrangement = Arrangement.spacedBy(48.dp)
     ) {
-        // Left Column: Tab Menu
+        // Left sidebar — tab list
         Column(
             modifier = Modifier
                 .width(260.dp)
                 .fillMaxHeight(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = "Settings",
                 style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
-            val tabs = listOf(
-                "Categories",
-                "App Visibility",
-                "Themes & Styles",
-                "About & Sideload"
+                modifier = Modifier.padding(bottom = 20.dp)
             )
 
             tabs.forEachIndexed { index, title ->
                 val isSelected = selectedTab == index
                 Surface(
                     onClick = { selectedTab = index },
-                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.04f),
                     colors = ClickableSurfaceDefaults.colors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
+                        containerColor = if (isSelected)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                        else Color.Transparent,
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                        focusedContentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        contentColor = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
+                        focusedContentColor = MaterialTheme.colorScheme.onSurface
                     ),
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
                     modifier = Modifier.fillMaxWidth()
@@ -73,27 +72,40 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            Button(
+            Surface(
                 onClick = onBack,
+                scale = ClickableSurfaceDefaults.scale(focusedScale = 1.04f),
+                colors = ClickableSurfaceDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Back to Home")
+                Text(
+                    "← Back to Home",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
             }
         }
 
-        // Right Column: Detail Content Box
+        // Right panel — content area, flat background
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), MaterialTheme.shapes.large)
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                    MaterialTheme.shapes.large
+                )
                 .padding(32.dp)
         ) {
             when (selectedTab) {
                 0 -> CategoriesTab(categories, viewModel)
                 1 -> AppVisibilityTab(categoriesWithAllApps, viewModel)
                 2 -> ThemesTab(builtInThemes, currentTheme, viewModel)
-                3 -> AboutTab()
+                3 -> WallpaperTab()
+                4 -> AboutTab()
             }
         }
     }

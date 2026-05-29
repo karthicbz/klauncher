@@ -9,7 +9,15 @@ import coil.fetch.FetchResult
 import coil.fetch.Fetcher
 import coil.key.Keyer
 import coil.request.Options
-import coil.request.ImageRequest
+
+/**
+ * Regex that matches a valid Android package name (e.g. "com.example.app").
+ * Used to avoid the Coil fetcher intercepting actual HTTP/file URLs.
+ */
+private val PACKAGE_NAME_REGEX = "^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+$".toRegex()
+
+private fun String.isPackageName(): Boolean =
+    !startsWith("http") && !startsWith("/") && PACKAGE_NAME_REGEX.matches(this)
 
 class AppIconFetcher(
     private val context: Context,
@@ -32,18 +40,15 @@ class AppIconFetcher(
 
     class Factory(private val context: Context) : Fetcher.Factory<String> {
         override fun create(data: String, options: Options, imageLoader: ImageLoader): Fetcher? {
-            // We only handle strings that look like package names and if they are prefixed or identified as such
-            // For simplicity, let's assume if it doesn't start with http or / it's a package name in our specific context
-            if (data.contains(".")) {
-                return AppIconFetcher(context, data)
-            }
-            return null
+            // Only handle strings that look like valid Android package names
+            return if (data.isPackageName()) AppIconFetcher(context, data) else null
         }
     }
 }
 
 class AppIconKeyer : Keyer<String> {
     override fun key(data: String, options: Options): String? {
-        return data
+        // Only produce a cache key for package name strings, not URLs
+        return if (data.isPackageName()) "pkg:$data" else null
     }
 }

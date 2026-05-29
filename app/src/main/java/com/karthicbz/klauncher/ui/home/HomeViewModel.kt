@@ -18,6 +18,10 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    // Tracks whether the first PackageManager scan has finished.
+    // Without this flag, an empty DB would show a spinner forever.
+    private val _refreshDone = MutableStateFlow(false)
+
     init {
         observeData()
         refreshApps()
@@ -26,12 +30,14 @@ class HomeViewModel @Inject constructor(
     private fun observeData() {
         combine(
             appRepository.getCategoriesWithApps(),
-            watchNextRepository.getWatchNextPrograms()
-        ) { categoriesWithApps, watchNextPrograms ->
-            if (categoriesWithApps.isEmpty()) {
-                HomeUiState.Loading
-            } else {
-                HomeUiState.Success(
+            watchNextRepository.getWatchNextPrograms(),
+            _refreshDone
+        ) { categoriesWithApps, watchNextPrograms, refreshDone ->
+            when {
+                // Still scanning — show skeleton
+                !refreshDone -> HomeUiState.Loading
+                // Scan done, emit success even if lists are empty (user has no visible apps)
+                else -> HomeUiState.Success(
                     watchNextPrograms = watchNextPrograms,
                     categoriesWithApps = categoriesWithApps
                 )
@@ -45,7 +51,13 @@ class HomeViewModel @Inject constructor(
 
     fun refreshApps() {
         viewModelScope.launch {
-            appRepository.refreshApps()
+            try {
+                appRepository.refreshApps()
+            } finally {
+                // Mark refresh done whether it succeeded or failed,
+                // so the UI never gets stuck on the loading skeleton.
+                _refreshDone.value = true
+            }
         }
     }
 

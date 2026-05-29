@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.karthicbz.klauncher.data.db.AppDao
 import com.karthicbz.klauncher.data.db.AppDatabase
 import com.karthicbz.klauncher.data.db.CategoryDao
+import com.karthicbz.klauncher.data.db.ThemeDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,4 +32,7 @@ object DatabaseModule {
 
     @Provides
     fun provideCategoryDao(database: AppDatabase): CategoryDao = database.categoryDao()
+
+    @Provides
+    fun provideThemeDao(database: AppDatabase): ThemeDao = database.themeDao()
 }

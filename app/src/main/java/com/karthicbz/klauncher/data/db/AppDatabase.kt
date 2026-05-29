@@ -14,4 +14,5 @@ import com.karthicbz.klauncher.data.model.ThemeEntity
 abstract class AppDatabase : RoomDatabase() {
     abstract fun appDao(): AppDao
     abstract fun categoryDao(): CategoryDao
+    abstract fun themeDao(): ThemeDao
 }

@@ -54,7 +54,7 @@ fun AppCard(
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
-                    .data(app.packageName) // We'll need a custom fetcher for this
+                    .data(context.packageManager.getApplicationIcon(app.packageName))
                     .crossfade(true)
                     .build(),
                 contentDescription = app.label,

@@ -1,9 +1,11 @@
 package com.karthicbz.klauncher.ui.home.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,27 +29,54 @@ fun WatchNextCard(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+            // Poster art
             AsyncImage(
                 model = program.posterArtUri,
                 contentDescription = program.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            
-            // Overlay with title at the bottom
+
+            // Dark scrim at the bottom for text readability — flat, no blur
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp),
-                contentAlignment = Alignment.BottomStart
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.45f)
+                    .align(Alignment.BottomCenter)
+                    .background(Color.Black.copy(alpha = 0.55f))
+            )
+
+            // Title + progress bar
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
             ) {
-                Column {
-                    program.title?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                program.title?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (program.progress > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // Simple flat progress bar — no Compose LinearProgressIndicator dep
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .background(Color.White.copy(alpha = 0.3f))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(program.progress / 100f)
+                                .fillMaxHeight()
+                                .background(MaterialTheme.colorScheme.primary)
                         )
                     }
                 }

@@ -5,11 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import com.karthicbz.klauncher.ui.settings.SettingsViewModel
@@ -34,11 +35,13 @@ fun ThemesTab(
         ) {
             Column {
                 Text("Select Theme", style = MaterialTheme.typography.headlineMedium)
-                Text("Pick a pre-configured styling layout or load a community JSON theme.", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "Pick a built-in theme or import a community JSON theme.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
             }
-            Button(onClick = { showImportDialog = true }) {
-                Text("Import Theme")
-            }
+            SettingsTextButton("Import Theme") { showImportDialog = true }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -55,25 +58,36 @@ fun ThemesTab(
                     onClick = { viewModel.selectTheme(theme) },
                     scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
                     colors = ClickableSurfaceDefaults.colors(
-                        containerColor = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
-                        contentColor = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                        focusedContentColor = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        containerColor = if (isActive)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        else MaterialTheme.colorScheme.surface,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (isActive)
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface
                     ),
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(theme.name, style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Colour swatches — flat boxes, no blur
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(modifier = Modifier.size(16.dp).background(Color(android.graphics.Color.parseColor(theme.colors.background)), MaterialTheme.shapes.extraSmall))
-                            Box(modifier = Modifier.size(16.dp).background(Color(android.graphics.Color.parseColor(theme.colors.surface)), MaterialTheme.shapes.extraSmall))
-                            Box(modifier = Modifier.size(16.dp).background(Color(android.graphics.Color.parseColor(theme.colors.primary)), MaterialTheme.shapes.extraSmall))
-                            Box(modifier = Modifier.size(16.dp).background(Color(android.graphics.Color.parseColor(theme.colors.accent)), MaterialTheme.shapes.extraSmall))
+                            ColorSwatch(theme.colors.background)
+                            ColorSwatch(theme.colors.surface)
+                            ColorSwatch(theme.colors.primary)
+                            ColorSwatch(theme.colors.accent)
                         }
+
                         if (isActive) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Active Theme", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                "✓ Active",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -81,95 +95,173 @@ fun ThemesTab(
         }
     }
 
+    // Import dialog — TV-native overlay, no AlertDialog
     if (showImportDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showImportDialog = false
-                importStatusMessage = null
+        TvImportDialog(
+            statusMessage = importStatusMessage,
+            onImportUrl = { url ->
+                viewModel.importThemeFromUrl(
+                    url = url,
+                    onSuccess = { importStatusMessage = "Theme imported successfully!" },
+                    onError = { error -> importStatusMessage = "Import failed: $error" }
+                )
             },
-            title = { Text("Import Community Theme") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = "Import raw styling JSON from community github or paste raw files. Choose from preset examples:",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    Button(
-                        onClick = {
-                            val presetUrl = "https://raw.githubusercontent.com/karthicbz/klauncher-themes/main/Nord.json"
-                            viewModel.importThemeFromUrl(
-                                url = presetUrl,
-                                onSuccess = {
-                                    importStatusMessage = "Successfully imported Nord theme!"
-                                },
-                                onError = { error ->
-                                    importStatusMessage = "Error importing theme: $error (Preset fallback initiated)"
-                                    viewModel.importThemeFromJson("""
-                                        {
-                                            "name": "Nord Raw",
-                                            "colors": {
-                                                "background": "#2E3440",
-                                                "surface": "#3B4252",
-                                                "onSurface": "#ECEFF4",
-                                                "primary": "#88C0D0",
-                                                "onPrimary": "#2E3440",
-                                                "accent": "#81A1C1",
-                                                "focusHighlight": "#EBCB8B"
-                                            },
-                                            "shapes": { "cardCornerRadius": 8, "iconShape": "rounded" },
-                                            "spacing": { "padding": 24, "gridGap": 16 }
-                                        }
-                                    """.trimIndent())
-                                }
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Download Nord (Remote Preset)")
-                    }
-
-                    Button(
-                        onClick = {
-                            val rawJson = """
-                                {
-                                    "name": "Matrix OLED",
-                                    "colors": {
-                                        "background": "#000000",
-                                        "surface": "#111111",
-                                        "onSurface": "#33FF33",
-                                        "primary": "#00FF00",
-                                        "onPrimary": "#000000",
-                                        "accent": "#008800",
-                                        "focusHighlight": "#33FF33"
-                                    },
-                                    "shapes": { "cardCornerRadius": 0, "iconShape": "square" },
-                                    "spacing": { "padding": 20, "gridGap": 12 }
-                                }
-                            """.trimIndent()
-                            val result = viewModel.importThemeFromJson(rawJson)
-                            if (result.isSuccess) {
-                                importStatusMessage = "Successfully validated and imported Matrix OLED!"
-                            } else {
-                                importStatusMessage = "Validation failed: ${result.exceptionOrNull()?.message}"
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Import Matrix OLED (Raw JSON)")
-                    }
-
-                    if (importStatusMessage != null) {
-                        Text(
-                            text = importStatusMessage!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
+            onImportJson = { json ->
+                val result = viewModel.importThemeFromJson(json)
+                importStatusMessage = if (result.isSuccess) {
+                    "Theme validated and applied!"
+                } else {
+                    "Validation failed: ${result.exceptionOrNull()?.message}"
                 }
             },
-            confirmButton = {}
+            onDismiss = {
+                showImportDialog = false
+                importStatusMessage = null
+            }
         )
     }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun TvImportDialog(
+    statusMessage: String?,
+    onImportUrl: (String) -> Unit,
+    onImportJson: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var urlText by remember { mutableStateOf("") }
+    var jsonText by remember { mutableStateOf("") }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.72f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            onClick = { /* consume */ },
+            modifier = Modifier.width(520.dp),
+            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.large),
+            colors = ClickableSurfaceDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(28.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Import Community Theme", style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    "Paste a URL to a raw JSON theme file, or paste JSON directly.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+
+                // URL input
+                Text("From URL:", style = MaterialTheme.typography.labelMedium)
+                BasicTextField(
+                    value = urlText,
+                    onValueChange = { urlText = it },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    decorationBox = { inner ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    MaterialTheme.shapes.small
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            if (urlText.isEmpty()) {
+                                Text(
+                                    "https://raw.githubusercontent.com/…/theme.json",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                )
+                            }
+                            inner()
+                        }
+                    }
+                )
+                SettingsTextButton(
+                    label = "Download & Apply",
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    focusedContainerColor = MaterialTheme.colorScheme.primary
+                ) { if (urlText.isNotBlank()) onImportUrl(urlText.trim()) }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // JSON paste input
+                Text("Paste raw JSON:", style = MaterialTheme.typography.labelMedium)
+                BasicTextField(
+                    value = jsonText,
+                    onValueChange = { jsonText = it },
+                    textStyle = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    maxLines = 4,
+                    decorationBox = { inner ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(80.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    MaterialTheme.shapes.small
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            if (jsonText.isEmpty()) {
+                                Text(
+                                    "{ \"name\": \"My Theme\", … }",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                )
+                            }
+                            inner()
+                        }
+                    }
+                )
+                SettingsTextButton(
+                    label = "Validate & Apply",
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    focusedContainerColor = MaterialTheme.colorScheme.primary
+                ) { if (jsonText.isNotBlank()) onImportJson(jsonText.trim()) }
+
+                // Status feedback
+                if (statusMessage != null) {
+                    Text(
+                        text = statusMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (statusMessage.startsWith("✓") || statusMessage.contains("success", ignoreCase = true))
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.error
+                    )
+                }
+
+                SettingsTextButton("Close") { onDismiss() }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColorSwatch(hexColor: String) {
+    val color = try {
+        Color(android.graphics.Color.parseColor(hexColor))
+    } catch (_: Exception) {
+        Color.Gray
+    }
+    Box(
+        modifier = Modifier
+            .size(18.dp)
+            .background(color, androidx.compose.foundation.shape.CircleShape)
+    )
 }
