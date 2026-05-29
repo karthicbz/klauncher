@@ -169,3 +169,4 @@ app/src/main/java/com/karthicbz/klauncher/
 - Fixed `HomeViewModel` class name collision (two ViewModels with same name) by using import alias.
 - Added Toast feedback on weather location save, input validation, and pre-filled lat/lon fields from saved values.
 - Fixed `OutlinedTextField` text colors to respect theme's `onSurface` color (fixes visibility in Catppuccin and other themes).
+- Replaced app launcher icons with new custom icon set (adaptive icon + monochrome support).
