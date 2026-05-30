@@ -1,6 +1,7 @@
 package com.karthicbz.klauncher.ui.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -8,10 +9,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 //import androidx.tv.material3.TvLazyRow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -31,6 +35,9 @@ fun HomeScreen(
 
     var reorderingAppPackage by remember { mutableStateOf<String?>(null) }
     var showMenuForApp by remember { mutableStateOf<AppInfo?>(null) }
+    var showCategoryPickerForApp by remember { mutableStateOf<AppInfo?>(null) }
+    var alphabetFilter by remember { mutableStateOf<Char?>(null) }
+    var showAlphabetPicker by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -44,7 +51,10 @@ fun HomeScreen(
                 reorderingAppPackage = reorderingAppPackage,
                 onReorderAppPackageChange = { reorderingAppPackage = it },
                 onShowMenuForApp = { showMenuForApp = it },
-                weatherViewModel = weatherViewModel
+                weatherViewModel = weatherViewModel,
+                alphabetFilter = alphabetFilter,
+                onAlphabetFilterChange = { alphabetFilter = it },
+                onShowAlphabetPicker = { showAlphabetPicker = it }
             )
             is HomeUiState.Error -> ErrorScreen(state.message)
         }
@@ -55,11 +65,122 @@ fun HomeScreen(
                 app = showMenuForApp!!,
                 onDismissRequest = { showMenuForApp = null },
                 onReorderClick = { reorderingAppPackage = showMenuForApp!!.packageName },
-                onHideClick = { viewModel.setAppHidden(showMenuForApp!!.packageName, true) }
+                onHideClick = { viewModel.setAppHidden(showMenuForApp!!.packageName, true) },
+                onAddToCategoryClick = { showCategoryPickerForApp = showMenuForApp }
             )
+        }
+
+        // Alphabet filter picker overlay
+        if (showAlphabetPicker) {
+            AlphabetPickerOverlay(
+                selectedLetter = alphabetFilter,
+                onSelectLetter = { letter ->
+                    alphabetFilter = letter
+                    showAlphabetPicker = false
+                },
+                onDismiss = { showAlphabetPicker = false }
+            )
+        }
+
+        // Category picker overlay
+        if (showCategoryPickerForApp != null) {
+            val app = showCategoryPickerForApp!!
+            val state = uiState
+            if (state is HomeUiState.Success) {
+                CategoryPickerOverlay(
+                    app = app,
+                    categories = state.categoriesWithApps.keys.toList(),
+                    onSelectCategory = { category ->
+                        viewModel.moveAppToCategory(app.packageName, app.categoryId, category.id)
+                        showCategoryPickerForApp = null
+                    },
+                    onDismiss = { showCategoryPickerForApp = null }
+                )
+            }
         }
     }
 }
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun CategoryPickerOverlay(
+    app: AppInfo,
+    categories: List<com.karthicbz.klauncher.data.model.CategoryEntity>,
+    onSelectCategory: (com.karthicbz.klauncher.data.model.CategoryEntity) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.72f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            onClick = { /* consume */ },
+            modifier = Modifier.width(420.dp),
+            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.large),
+            colors = ClickableSurfaceDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Move \"${app.label}\" to…",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                categories.forEach { category ->
+                    Surface(
+                        onClick = { onSelectCategory(category) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
+                        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = if (category.id == app.categoryId)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                            else MaterialTheme.colorScheme.surface,
+                            focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            focusedContentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text(
+                            text = category.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
+                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                    )
+                ) {
+                    Text(
+                        text = "Cancel",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .fillMaxWidth()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val ALPHABETS = ('A'..'Z').toList()
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -72,7 +193,10 @@ private fun HomeContent(
     reorderingAppPackage: String?,
     onReorderAppPackageChange: (String?) -> Unit,
     onShowMenuForApp: (AppInfo?) -> Unit,
-    weatherViewModel: com.karthicbz.klauncher.ui.home.viewmodel.HomeViewModel
+    weatherViewModel: com.karthicbz.klauncher.ui.home.viewmodel.HomeViewModel,
+    alphabetFilter: Char?,
+    onAlphabetFilterChange: (Char?) -> Unit,
+    onShowAlphabetPicker: (Boolean) -> Unit
 ) {
     // Focus request for the very first app card so D-pad works on first frame
     val firstCardFocus = remember { FocusRequester() }
@@ -97,6 +221,59 @@ private fun HomeContent(
             onSettingsClick = onSettingsClick,
             weather = weather
         )
+
+        // Alphabet filter row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 48.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Apps",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (alphabetFilter != null) {
+                    Surface(
+                        onClick = { onAlphabetFilterChange(null) },
+                        shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                            focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Text(
+                            text = "Clear Filter: ${alphabetFilter}",
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+                Surface(
+                    onClick = { onShowAlphabetPicker(true) },
+                    shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                        focusedContainerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        text = if (alphabetFilter != null) "Filter: $alphabetFilter" else "A-Z",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+        }
+
+        // Filter apps by selected alphabet
+        val filteredCategories = state.categoriesWithApps.mapValues { (_, apps) ->
+            if (alphabetFilter != null) {
+                apps.filter { it.label.firstOrNull()?.uppercaseChar() == alphabetFilter }
+            } else apps
+        }.filter { (category, apps) -> apps.isNotEmpty() || category.isSystem }
 
         // LazyColumn with TV Surface cards — D-pad focus handled by TV Material Surface
         LazyColumn(
@@ -129,8 +306,7 @@ private fun HomeContent(
             }
 
             // Category rows
-            categories.entries.forEachIndexed { categoryIndex, (category, apps) ->
-                if (apps.isNotEmpty() || category.isSystem) {
+            filteredCategories.entries.forEachIndexed { categoryIndex, (category, apps) ->
                     item {
                         Column(modifier = Modifier.padding(horizontal = 48.dp)) {
                             Text(
@@ -193,7 +369,93 @@ private fun HomeContent(
                                 }
                             }
                         }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun AlphabetPickerOverlay(
+    selectedLetter: Char?,
+    onSelectLetter: (Char) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.72f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            onClick = { /* consume */ },
+            modifier = Modifier.width(520.dp),
+            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.large),
+            colors = ClickableSurfaceDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Filter by Alphabet",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                val rows = ALPHABETS.chunked(7)
+                rows.forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                    ) {
+                        row.forEach { letter ->
+                            Surface(
+                                onClick = { onSelectLetter(letter) },
+                                shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
+                                colors = ClickableSurfaceDefaults.colors(
+                                    containerColor = if (selectedLetter == letter)
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                    else MaterialTheme.colorScheme.surface,
+                                    focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
+                                    focusedContentColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            ) {
+                                Text(
+                                    text = letter.toString(),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    modifier = Modifier
+                                        .padding(12.dp)
+                                        .width(32.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
+                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                    )
+                ) {
+                    Text(
+                        text = "Cancel",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .fillMaxWidth()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    )
                 }
             }
         }

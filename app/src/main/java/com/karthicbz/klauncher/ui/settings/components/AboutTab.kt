@@ -23,7 +23,11 @@ fun AboutTab(modifier: Modifier = Modifier) {
             item {
                 Surface(
                     onClick = { /* No-op */ },
-                    colors = ClickableSurfaceDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        focusedContentColor = MaterialTheme.colorScheme.onSurface
+                    ),
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -43,7 +47,11 @@ fun AboutTab(modifier: Modifier = Modifier) {
             item {
                 Surface(
                     onClick = { /* No-op */ },
-                    colors = ClickableSurfaceDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        focusedContentColor = MaterialTheme.colorScheme.onSurface
+                    ),
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
                     modifier = Modifier.fillMaxWidth()
                 ) {

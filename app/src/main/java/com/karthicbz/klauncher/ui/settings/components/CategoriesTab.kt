@@ -8,6 +8,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
@@ -53,7 +55,7 @@ fun CategoriesTab(
         ) {
             items(categories) { category ->
                 Surface(
-                    onClick = { /* no-op row tap */ },
+                    onClick = { showRenameDialog = category },
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
                     modifier = Modifier.fillMaxWidth(),
                     colors = ClickableSurfaceDefaults.colors(
@@ -138,6 +140,7 @@ private fun TvInputDialog(
     onDismiss: () -> Unit
 ) {
     var text by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
 
     Box(
         modifier = Modifier
@@ -164,6 +167,7 @@ private fun TvInputDialog(
                 BasicTextField(
                     value = text,
                     onValueChange = { text = it },
+                    modifier = Modifier.focusRequester(focusRequester),
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
                         color = MaterialTheme.colorScheme.onSurface
                     ),
@@ -189,6 +193,10 @@ private fun TvInputDialog(
                         }
                     }
                 )
+
+                LaunchedEffect(Unit) {
+                    focusRequester.requestFocus()
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

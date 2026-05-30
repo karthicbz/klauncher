@@ -27,6 +27,7 @@ fun AppContextMenu(
     onDismissRequest: () -> Unit,
     onReorderClick: () -> Unit,
     onHideClick: () -> Unit,
+    onAddToCategoryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -69,6 +70,10 @@ fun AppContextMenu(
                 }
                 MenuButton("Hide App") {
                     onHideClick()
+                    onDismissRequest()
+                }
+                MenuButton("Move to Category") {
+                    onAddToCategoryClick()
                     onDismissRequest()
                 }
                 MenuButton("App Info") {

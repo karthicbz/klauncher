@@ -66,12 +66,14 @@ Activity (@AndroidEntryPoint)
 - Weather display: temperature + WMO weather icon (from Open-Meteo).
 - "Continue Watching" row from Android TV's Watch Next ContentProvider.
 - App launching via Leanback intent, fallback to standard launcher intent.
+- **Alphabet filter**: "A-Z" button next to "Apps" label opens a dialog with all alphabets. Selecting a letter filters all category apps to those starting with that letter. "Clear Filter" button when active.
 
 ### App Management
 - Auto-scans both `CATEGORY_LEANBACK_LAUNCHER` and `CATEGORY_LAUNCHER` intents, deduplicates by packageName.
 - Reordering: D-pad Left/Right within category, Up/Down moves to adjacent category. Border highlight on reorder item.
 - Hide/unhide apps from context menu.
-- Context menu: Reorder, Hide, App Info, Uninstall, Cancel.
+- Context menu: Reorder, Hide, Move to Category, App Info, Uninstall, Cancel.
+- "Move to Category" opens category picker overlay to move app between categories.
 - `PackageChangeReceiver` refreshes on install/uninstall/update.
 - `BootReceiver` refreshes on reboot.
 
@@ -96,15 +98,19 @@ Activity (@AndroidEntryPoint)
 - Weather refreshes when lat/lon change (combined flow + `collectLatest`).
 
 ### Wallpaper
-- 8 solid dark colour presets.
+- 8 solid dark colour presets + "None (Theme Default)" option.
 - System wallpaper picker (falls back from `ACTION_LIVE_WALLPAPER_CHOOSER` to `ACTION_SET_WALLPAPER`).
+- Wallpaper color is persisted separately from theme, applied as root background. Image wallpaper supported via Coil `AsyncImage`.
+- **Unsplash integration**: API key input, load topic/category list, get random photo (respects selected category), search with result list, auto-update toggle.
+- **Local file picker**: Pick image from device storage via `ActivityResultContracts.OpenDocument`.
+- Image and color wallpapers are mutually exclusive — setting one clears the other.
 
-### Settings (6 Tabs)
-1. **Categories** — Add/rename/delete/reorder categories.
+### Settings (7 Tabs)
+1. **Categories** — Add/rename/delete/reorder categories. Clicking a row opens rename dialog. Text field in dialogs auto-focused.
 2. **App Visibility** — Toggle hidden/visible per app, grouped by category.
 3. **Themes & Styles** — Built-in theme grid + import dialog (URL or raw JSON).
 4. **Weather** — Latitude/longitude text inputs + Save button. Save action calls `viewModel.setLocation(lat, lon)`.
-5. **Wallpaper** — Solid colour presets + system wallpaper picker.
+5. **Wallpaper** — Solid colour presets, Unsplash (key/topics/search/random), local file picker, system wallpaper picker.
 6. **About** — App version + Fire TV sideload instructions.
 
 ### TV-Optimized UX
@@ -134,7 +140,7 @@ app/src/main/java/com/karthicbz/klauncher/
 ├── data/
 │   ├── db/      (AppDatabase, AppDao, CategoryDao, ThemeDao)
 │   ├── model/   (AppEntity, CategoryEntity, ThemeEntity, AppInfo, WatchNextProgram)
-│   ├── remote/  (WeatherApiService — Retrofit interface + DTOs)
+│   ├── remote/  (WeatherApiService — Retrofit interface + DTOs, UnsplashApi — URL+serialization client)
 │   └── repository/ (WeatherRepository)
 ├── di/          (DatabaseModule, NetworkModule)
 ├── receiver/    (BootReceiver, PackageChangeReceiver)
@@ -153,20 +159,17 @@ app/src/main/java/com/karthicbz/klauncher/
 ---
 
 ## Recent Work (this agent session)
-- Added weather display using Open-Meteo.
-- Added Retrofit + OkHttp + converter-kotlinx-serialization to version catalog and build file.
-- Created `NetworkModule` (Hilt module for Json + Retrofit `WeatherApiService`).
-- Created `WeatherApiService` (Retrofit interface), `WeatherRepository`, `UserPreferencesRepository` (lat/lon).
-- Created `WeatherIconMapper` (WMO code → Material icon).
-- Created `WeatherSettingsTab` in settings with lat/lon inputs.
-- Updated `SettingsViewModel` to inject `UserPreferencesRepository` and expose `setLocation()`.
-- Updated `SettingsScreen` to add Weather tab.
-- Created `HomeViewModel` (in `ui/home/viewmodel/`) for weather state.
-- Updated `HomeHeader` to accept `weather: CurrentWeather?` and display icon + temp next to clock.
-- Updated `HomeScreen` to wire weather from a separate `HomeViewModel` (weather) into `HomeHeader`.
-- Fixed version catalog key conflict (`retrofit` vs `retrofit-serialization-converter` → renamed to `retrofit-core`).
-- Added `material-icons-extended` dependency for weather icons.
-- Fixed `HomeViewModel` class name collision (two ViewModels with same name) by using import alias.
-- Added Toast feedback on weather location save, input validation, and pre-filled lat/lon fields from saved values.
-- Fixed `OutlinedTextField` text colors to respect theme's `onSurface` color (fixes visibility in Catppuccin and other themes).
-- Replaced app launcher icons with new custom icon set (adaptive icon + monochrome support).
+- Fixed `BasicTextField` not focusable in `TvInputDialog` by adding `FocusRequester` + `LaunchedEffect`.
+- Fixed category row `onClick` no-op — now opens rename dialog.
+- Added "Move to Category" option to app context menu + `CategoryPickerOverlay` dialog.
+- Added wallpaper color presets `onClick` — solid colors now apply as root background via `Modifier.background()`.
+- Added `wallpaperColor` state to `UserPreferencesRepository` + `SettingsViewModel`.
+- Applied wallpaper in `MainActivity.kt` (color via `Modifier.background`, image via Coil `AsyncImage`).
+- Fixed About tab `Surface` content colors by adding explicit `contentColor`/`focusedContentColor`.
+- **Unsplash wallpaper integration**:
+  - Created `UnsplashApi.kt` (data/remote/) — `getTopics`, `getRandomPhoto`, `searchPhotos` via `java.net.URL` + kotlinx.serialization.
+  - Added state flows: `wallpaperImageUrl`, `unsplashAccessKey`, `unsplashTopicId`, `unsplashAutoUpdate` in `UserPreferencesRepository`.
+  - Added `SettingsViewModel` methods: `setUnsplashAccessKey`, `fetchUnsplashTopics`, `fetchRandomUnsplashPhoto`, `searchUnsplash`, etc.
+  - Rewrote `WallpaperTab` with sections for solid colors, system picker, local file picker, Unsplash key input, topics list, random/auto-update, search.
+- **Local file picker**: Uses `ActivityResultContracts.OpenDocument("image/*")` to pick images from device storage.
+- **Home screen alphabet filter**: "Apps" label + "A-Z" button opens an alphabet picker dialog. Filters app rows by first letter. "Clear Filter" button when active.

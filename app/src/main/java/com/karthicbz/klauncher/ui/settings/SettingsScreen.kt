@@ -106,7 +106,7 @@ fun SettingsScreen(
                 1 -> AppVisibilityTab(categoriesWithAllApps, viewModel)
                 2 -> ThemesTab(builtInThemes, currentTheme, viewModel)
                 3 -> WeatherSettingsTab(viewModel)
-                4 -> WallpaperTab()
+                4 -> WallpaperTab(viewModel)
                 5 -> AboutTab()
             }
         }
