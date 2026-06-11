@@ -66,7 +66,7 @@ Activity (@AndroidEntryPoint)
 - Weather display: temperature + WMO weather icon (from Open-Meteo).
 - "Continue Watching" row from Android TV's Watch Next ContentProvider.
 - App launching via Leanback intent, fallback to standard launcher intent.
-- **Alphabet filter**: "A-Z" button next to "Apps" label opens a dialog with all alphabets. Selecting a letter filters all category apps to those starting with that letter. "Clear Filter" button when active.
+- **Alphabet filter**: "A-Z" button opens an overlay with all alphabets on visible buttons. Selecting a letter filters all category apps to those starting with that letter. "Clear Filter" button when active.
 
 ### App Management
 - Auto-scans both `CATEGORY_LEANBACK_LAUNCHER` and `CATEGORY_LAUNCHER` intents, deduplicates by packageName.
@@ -172,4 +172,5 @@ app/src/main/java/com/karthicbz/klauncher/
   - Added `SettingsViewModel` methods: `setUnsplashAccessKey`, `fetchUnsplashTopics`, `fetchRandomUnsplashPhoto`, `searchUnsplash`, etc.
   - Rewrote `WallpaperTab` with sections for solid colors, system picker, local file picker, Unsplash key input, topics list, random/auto-update, search.
 - **Local file picker**: Uses `ActivityResultContracts.OpenDocument("image/*")` to pick images from device storage.
-- **Home screen alphabet filter**: "Apps" label + "A-Z" button opens an alphabet picker dialog. Filters app rows by first letter. "Clear Filter" button when active.
+- **Home screen alphabet filter**: "A-Z" button opens an alphabet picker overlay. Filters app rows by first letter. "Clear Filter" button when active. Removed duplicate "Apps" heading to eliminate redundancy with the default category header.
+- Fixed A-Z alphabet picker: letter buttons invisible (`surface`/`primary.copy(alpha=0.2f)` → `surfaceVariant`/solid `primary`). Fixed focus trap: outer `Surface(onClick={consume})` replaced with non-clickable `Column` so D-pad reaches letter buttons and Cancel.

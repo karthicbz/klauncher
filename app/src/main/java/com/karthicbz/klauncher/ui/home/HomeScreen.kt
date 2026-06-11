@@ -227,44 +227,38 @@ private fun HomeContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 48.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Apps",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (alphabetFilter != null) {
-                    Surface(
-                        onClick = { onAlphabetFilterChange(null) },
-                        shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                            focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
-                        )
-                    ) {
-                        Text(
-                            text = "Clear Filter: ${alphabetFilter}",
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                }
+            if (alphabetFilter != null) {
                 Surface(
-                    onClick = { onShowAlphabetPicker(true) },
+                    onClick = { onAlphabetFilterChange(null) },
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
                     colors = ClickableSurfaceDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                        focusedContainerColor = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                        focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
                     )
                 ) {
                     Text(
-                        text = if (alphabetFilter != null) "Filter: $alphabetFilter" else "A-Z",
+                        text = "Clear Filter: ${alphabetFilter}",
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
+            }
+            Surface(
+                onClick = { onShowAlphabetPicker(true) },
+                shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
+                colors = ClickableSurfaceDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    focusedContainerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    text = if (alphabetFilter != null) "Filter: $alphabetFilter" else "A-Z",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
             }
         }
 
@@ -388,75 +382,71 @@ private fun AlphabetPickerOverlay(
             .background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            onClick = { /* consume */ },
-            modifier = Modifier.width(520.dp),
-            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.large),
-            colors = ClickableSurfaceDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                focusedContainerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Filter by Alphabet",
-                    style = MaterialTheme.typography.headlineSmall
+        Column(
+            modifier = Modifier
+                .width(520.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.large
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                val rows = ALPHABETS.chunked(7)
-                rows.forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-                    ) {
-                        row.forEach { letter ->
-                            Surface(
-                                onClick = { onSelectLetter(letter) },
-                                shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
-                                colors = ClickableSurfaceDefaults.colors(
-                                    containerColor = if (selectedLetter == letter)
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                                    else MaterialTheme.colorScheme.surface,
-                                    focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                    focusedContentColor = MaterialTheme.colorScheme.onSurface
-                                )
-                            ) {
-                                Text(
-                                    text = letter.toString(),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier
-                                        .padding(12.dp)
-                                        .width(32.dp),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Filter by Alphabet",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            val rows = ALPHABETS.chunked(7)
+            rows.forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                ) {
+                    row.forEach { letter ->
+                        Surface(
+                            onClick = { onSelectLetter(letter) },
+                            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
+                            colors = ClickableSurfaceDefaults.colors(
+                                containerColor = if (selectedLetter == letter)
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                focusedContainerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                focusedContentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Text(
+                                text = letter.toString(),
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .width(32.dp),
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Surface(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
-                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
-                    colors = ClickableSurfaceDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
-                    )
-                ) {
-                    Text(
-                        text = "Cancel",
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier
-                            .padding(vertical = 12.dp)
-                            .fillMaxWidth()
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-                    )
-                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
+                scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
+                colors = ClickableSurfaceDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                )
+            ) {
+                Text(
+                    text = "Cancel",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier
+                        .padding(vertical = 12.dp)
+                        .fillMaxWidth()
+                        .wrapContentWidth(Alignment.CenterHorizontally)
+                )
             }
         }
     }
