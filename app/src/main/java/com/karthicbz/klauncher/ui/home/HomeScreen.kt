@@ -115,19 +115,16 @@ private fun CategoryPickerOverlay(
             .background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            onClick = { /* consume */ },
-            modifier = Modifier.width(420.dp),
-            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.large),
-            colors = ClickableSurfaceDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                focusedContainerColor = MaterialTheme.colorScheme.surface
-            )
+        Column(
+            modifier = Modifier
+                .width(420.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.large
+                )
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
                 Text(
                     text = "Move \"${app.label}\" to…",
                     style = MaterialTheme.typography.headlineSmall
@@ -175,7 +172,6 @@ private fun CategoryPickerOverlay(
                             .wrapContentWidth(Alignment.CenterHorizontally)
                     )
                 }
-            }
         }
     }
 }
@@ -267,7 +263,7 @@ private fun HomeContent(
             if (alphabetFilter != null) {
                 apps.filter { it.label.firstOrNull()?.uppercaseChar() == alphabetFilter }
             } else apps
-        }.filter { (category, apps) -> apps.isNotEmpty() || category.isSystem }
+        }
 
         // LazyColumn with TV Surface cards — D-pad focus handled by TV Material Surface
         LazyColumn(

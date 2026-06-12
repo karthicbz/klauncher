@@ -26,6 +26,7 @@ fun CategoriesTab(
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf<CategoryEntity?>(null) }
+    var showDeleteDialog by remember { mutableStateOf<CategoryEntity?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -54,27 +55,35 @@ fun CategoriesTab(
             modifier = Modifier.weight(1f)
         ) {
             items(categories) { category ->
-                Surface(
-                    onClick = { showRenameDialog = category },
-                    shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ClickableSurfaceDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.medium
+                        )
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column {
-                            Text(category.name, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                text = if (category.isSystem) "System" else "User",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        Surface(
+                            onClick = { showRenameDialog = category },
+                            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
+                            colors = ClickableSurfaceDefaults.colors(
+                                containerColor = Color.Transparent,
+                                focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             )
+                        ) {
+                            Column(modifier = Modifier.padding(4.dp)) {
+                                Text(category.name, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    text = if (category.isSystem) "System" else "User",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            }
                         }
 
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -87,7 +96,7 @@ fun CategoriesTab(
                                     containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
                                     focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
                                     contentColor = MaterialTheme.colorScheme.error
-                                ) { viewModel.deleteCategory(category) }
+                                ) { showDeleteDialog = category }
                             }
                         }
                     }
@@ -107,6 +116,21 @@ fun CategoriesTab(
                 showAddDialog = false
             },
             onDismiss = { showAddDialog = false }
+        )
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog != null) {
+        val cat = showDeleteDialog!!
+        TvConfirmDialog(
+            title = "Delete \"${cat.name}\"?",
+            message = "Apps in this category will be moved to the default category.",
+            confirmLabel = "Delete",
+            onConfirm = {
+                viewModel.deleteCategory(cat)
+                showDeleteDialog = null
+            },
+            onDismiss = { showDeleteDialog = null }
         )
     }
 
@@ -132,6 +156,54 @@ fun CategoriesTab(
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
+private fun TvConfirmDialog(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.72f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .width(420.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.large
+                )
+                .padding(28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.headlineSmall)
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+            ) {
+                SettingsTextButton("Cancel") { onDismiss() }
+                SettingsTextButton(
+                    label = confirmLabel,
+                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                    focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
+                    contentColor = MaterialTheme.colorScheme.error
+                ) { onConfirm() }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
 private fun TvInputDialog(
     title: String,
     placeholder: String,
@@ -148,19 +220,16 @@ private fun TvInputDialog(
             .background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            onClick = { /* consume */ },
-            modifier = Modifier.width(420.dp),
-            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.large),
-            colors = ClickableSurfaceDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                focusedContainerColor = MaterialTheme.colorScheme.surface
-            )
+        Column(
+            modifier = Modifier
+                .width(420.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.large
+                )
+                .padding(28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(28.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
                 Text(title, style = MaterialTheme.typography.headlineSmall)
 
                 // Text input field
@@ -210,7 +279,6 @@ private fun TvInputDialog(
                         contentColor = MaterialTheme.colorScheme.primary
                     ) { onConfirm(text) }
                 }
-            }
         }
     }
 }

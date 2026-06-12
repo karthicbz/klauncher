@@ -53,7 +53,7 @@ fun ThemesTab(
             modifier = Modifier.weight(1f)
         ) {
             items(builtInThemes) { theme ->
-                val isActive = theme.name == currentTheme.name
+                val isActive = theme == currentTheme
                 Surface(
                     onClick = { viewModel.selectTheme(theme) },
                     scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
@@ -139,19 +139,16 @@ private fun TvImportDialog(
             .background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            onClick = { /* consume */ },
-            modifier = Modifier.width(520.dp),
-            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.large),
-            colors = ClickableSurfaceDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                focusedContainerColor = MaterialTheme.colorScheme.surface
-            )
+        Column(
+            modifier = Modifier
+                .width(520.dp)
+                .background(
+                    MaterialTheme.colorScheme.surface,
+                    MaterialTheme.shapes.large
+                )
+                .padding(28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(28.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
                 Text("Import Community Theme", style = MaterialTheme.typography.headlineSmall)
                 Text(
                     "Paste a URL to a raw JSON theme file, or paste JSON directly.",
@@ -248,7 +245,6 @@ private fun TvImportDialog(
 
                 SettingsTextButton("Close") { onDismiss() }
             }
-        }
     }
 }
 

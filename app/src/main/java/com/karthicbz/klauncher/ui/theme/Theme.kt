@@ -30,7 +30,9 @@ fun KlauncherTheme(
         surface = Color(android.graphics.Color.parseColor(config.colors.surface)),
         onSurface = Color(android.graphics.Color.parseColor(config.colors.onSurface)),
         primary = Color(android.graphics.Color.parseColor(config.colors.primary)),
-        onPrimary = Color(android.graphics.Color.parseColor(config.colors.onPrimary))
+        onPrimary = Color(android.graphics.Color.parseColor(config.colors.onPrimary)),
+        secondary = Color(android.graphics.Color.parseColor(config.colors.accent)),
+        tertiary = Color(android.graphics.Color.parseColor(config.colors.focusHighlight))
     )
 
     val shapes = Shapes(

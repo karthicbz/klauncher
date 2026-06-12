@@ -66,7 +66,9 @@ class SettingsViewModel @Inject constructor(
 
     fun deleteCategory(category: CategoryEntity) {
         viewModelScope.launch {
-            categoryDao.deleteCategory(category)
+            if (!category.isSystem) {
+                categoryDao.deleteCategory(category)
+            }
         }
     }
 

@@ -13,11 +13,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
+import androidx.tv.material3.SurfaceDefaults
 import coil.compose.rememberAsyncImagePainter
 import com.karthicbz.klauncher.repository.ThemeRepository
 import com.karthicbz.klauncher.repository.UserPreferencesRepository
@@ -62,7 +65,14 @@ class MainActivity : ComponentActivity() {
                     }
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        shape = RectangleShape
+                        tonalElevation = 0.dp,
+                        colors = SurfaceDefaults.colors(
+                            containerColor = if (wallpaperImageUrl != null) {
+                                androidx.compose.ui.graphics.Color.Transparent
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
+                        )
                     ) {
                         Box(
                             modifier = Modifier

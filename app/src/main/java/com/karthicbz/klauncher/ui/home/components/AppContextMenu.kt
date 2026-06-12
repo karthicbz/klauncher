@@ -39,19 +39,16 @@ fun AppContextMenu(
             .background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            onClick = { /* consume clicks; dialog handled by buttons below */ },
-            modifier = Modifier.width(400.dp),
-            shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.large),
-            colors = ClickableSurfaceDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                focusedContainerColor = MaterialTheme.colorScheme.surface
-            )
+        Column(
+            modifier = Modifier
+                .width(400.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.large
+                )
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
                 Text(
                     text = app.label,
                     style = MaterialTheme.typography.headlineSmall
@@ -105,7 +102,6 @@ fun AppContextMenu(
                             .wrapContentWidth(Alignment.CenterHorizontally)
                     )
                 }
-            }
         }
     }
 }
