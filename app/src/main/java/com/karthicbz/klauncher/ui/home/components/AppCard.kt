@@ -32,9 +32,12 @@ fun AppCard(
     var longPressJob by remember { mutableStateOf<Job?>(null) }
     var longPressTriggered by remember { mutableStateOf(false) }
 
-    Box(
+    Surface(
+        onClick = onClick,
         modifier = modifier
-            .onKeyEvent { keyEvent ->
+            .width(160.dp)
+            .aspectRatio(16f / 9f)
+            .onPreviewKeyEvent { keyEvent ->
                 when {
                     // Key held down — start the timer on first KeyDown
                     (keyEvent.key == Key.DirectionCenter || keyEvent.key == Key.Enter)
@@ -42,26 +45,23 @@ fun AppCard(
                         if (longPressJob == null) {
                             longPressTriggered = false
                             longPressJob = scope.launch {
-                                android.util.Log.d("AppCard", "Timer started")
                                 delay(LONG_PRESS_TIMEOUT)
-                                android.util.Log.d("AppCard", "Long press triggered!")
                                 longPressTriggered = true
                                 onLongClick()
                             }
                         }
-                        true
+                        false // let Surface handle KeyDown (visual feedback)
                     }
                     // Key released — cancel timer or consume event if long press fired
                     (keyEvent.key == Key.DirectionCenter || keyEvent.key == Key.Enter)
                             && keyEvent.type == KeyEventType.KeyUp -> {
                         longPressJob?.cancel()
                         longPressJob = null
-                        android.util.Log.d("AppCard", "KeyUp — longPressTriggered=$longPressTriggered")
                         if (longPressTriggered) {
                             longPressTriggered = false
-                            true
+                            true // consume — prevent Surface's onClick
                         } else {
-                            false
+                            false // let Surface handle onClick
                         }
                     }
                     // Menu button on remotes that have it
@@ -72,13 +72,7 @@ fun AppCard(
                     }
                     else -> false
                 }
-            }
-    ) {
-        Surface(
-            onClick = onClick,
-            modifier = Modifier
-                .width(160.dp)
-                .aspectRatio(16f / 9f),
+            },
             shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.medium),
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1.1f),
             colors = ClickableSurfaceDefaults.colors(
@@ -111,5 +105,4 @@ fun AppCard(
                 )
             }
         }
-    }
 }

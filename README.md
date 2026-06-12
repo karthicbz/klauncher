@@ -11,8 +11,9 @@ A lightweight, customizable Android TV launcher built entirely with Jetpack Comp
 - **Weather** — Current temperature + icon from Open-Meteo (free, no API key) based on your coordinates
 - **Continue Watching** — "Watch Next" row from Android TV's ContentProvider
 - **Themes** — 5 built-in themes (OLED Dark, OLED Black, Light, Nord, Catppuccin) plus custom theme import from URL or JSON
-- **Wallpaper** — Solid colour presets or system wallpaper picker
-- **TV-Optimized** — All D-pad navigation, no touchscreen required, flat overlays for performance, 10-foot readability
+- **Wallpaper** — Solid colour presets, system wallpaper picker, or Unsplash integration
+- **App Context Menu** — Long-press OK/Enter or press Menu key per-app actions (move to category, hide)
+- **TV-Optimized** — Full D-pad navigation, no touchscreen required, focus-trap-free dialogs, flat overlays for performance, 10-foot readability
 
 ## Tech Stack
 
