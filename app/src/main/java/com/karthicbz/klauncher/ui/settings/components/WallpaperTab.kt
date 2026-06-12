@@ -7,18 +7,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
+import com.karthicbz.klauncher.repository.WallpaperSource
 import com.karthicbz.klauncher.ui.settings.SettingsViewModel
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -30,25 +25,24 @@ fun WallpaperTab(
     val context = LocalContext.current
     val currentWallpaper by viewModel.wallpaperColor.collectAsState()
     val currentImageWallpaper by viewModel.wallpaperImageUrl.collectAsState()
-    val unsplashKey by viewModel.unsplashAccessKey.collectAsState()
-    val unsplashTopics by viewModel.unsplashTopics.collectAsState()
-    val unsplashTopicId by viewModel.unsplashTopicId.collectAsState()
-    val unsplashAutoUpdate by viewModel.unsplashAutoUpdate.collectAsState()
-    val searchResults by viewModel.unsplashSearchResults.collectAsState()
-    val isLoading by viewModel.isLoadingUnsplash.collectAsState()
+    val wallpaperSource by viewModel.wallpaperSource.collectAsState()
+    val pixabayCategory by viewModel.pixabayCategory.collectAsState()
+    val pixabayCategories = viewModel.pixabayCategories
+    val isLoading by viewModel.isLoadingWallpaper.collectAsState()
+    val status by viewModel.wallpaperStatus.collectAsState()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
-            viewModel.setWallpaperImageUrl(it.toString())
+            viewModel.setWallpaperImageUrl(it.toString(), WallpaperSource.LOCAL_IMAGE)
         }
     }
 
     Column(modifier = modifier.fillMaxSize()) {
         Text("Wallpaper", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Choose a solid background colour or open the system wallpaper picker.",
+            "Choose a solid colour, daily Bing wallpaper, Pixabay, or a local image.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.padding(bottom = 24.dp)
@@ -124,92 +118,70 @@ fun WallpaperTab(
                 }
             }
 
-            // ── Unsplash ──
+            // ── Bing Daily Wallpaper ──
             item {
                 Text(
-                    "Unsplash",
+                    "Bing Daily Wallpaper",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
                 )
             }
-
-            // Unsplash access key
             item {
-                val keyFocus = remember { FocusRequester() }
-                var keyInput by remember { mutableStateOf(unsplashKey.orEmpty()) }
-                Column {
-                    Text(
-                        "Access Key",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    BasicTextField(
-                        value = keyInput,
-                        onValueChange = { keyInput = it },
-                        modifier = Modifier.focusRequester(keyFocus),
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        decorationBox = { inner ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                        MaterialTheme.shapes.small
-                                    )
-                                    .padding(horizontal = 14.dp, vertical = 10.dp)
-                            ) {
-                                if (keyInput.isEmpty()) {
-                                    Text(
-                                        "e.g. abc123...",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                                    )
-                                }
-                                inner()
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SettingsTextButton(
+                            label = if (wallpaperSource == WallpaperSource.BING) "Bing: ON" else "Bing: OFF",
+                            containerColor = if (wallpaperSource == WallpaperSource.BING)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            focusedContainerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ) {
+                            if (wallpaperSource == WallpaperSource.BING) {
+                                viewModel.setWallpaperSource(WallpaperSource.NONE)
+                            } else {
+                                viewModel.fetchBingWallpaper()
                             }
                         }
-                    )
-                    LaunchedEffect(Unit) { keyFocus.requestFocus() }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SettingsTextButton("Save Key") {
-                            viewModel.setUnsplashAccessKey(keyInput.ifBlank { null })
-                        }
-                        if (unsplashKey != null) {
+                        if (wallpaperSource == WallpaperSource.BING) {
                             SettingsTextButton(
-                                label = "Load Topics",
-                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                focusedContainerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.primary
-                            ) { viewModel.fetchUnsplashTopics() }
+                                label = if (isLoading) "Refreshing…" else "Refresh Now",
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                focusedContainerColor = MaterialTheme.colorScheme.primary
+                            ) { viewModel.fetchBingWallpaper() }
                         }
                     }
+                    Text(
+                        "Fetches the daily Bing homepage image automatically.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
                 }
             }
 
-            // Unsplash topics / categories
-            if (unsplashTopics.isNotEmpty()) {
-                item {
+            // ── Pixabay ──
+            item {
+                Text(
+                    "Pixabay",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                )
+            }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Categories",
+                        "Category",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
-                }
-                item {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        unsplashTopics.forEach { topic ->
+                        pixabayCategories.forEach { cat ->
                             Surface(
-                                onClick = { viewModel.setUnsplashTopicId(topic.id) },
+                                onClick = { viewModel.setPixabayCategory(cat) },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
                                 colors = ClickableSurfaceDefaults.colors(
-                                    containerColor = if (unsplashTopicId == topic.id)
+                                    containerColor = if (pixabayCategory == cat)
                                         MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                                     else MaterialTheme.colorScheme.surface,
                                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -218,127 +190,46 @@ fun WallpaperTab(
                                 )
                             ) {
                                 Text(
-                                    topic.title,
+                                    cat.replaceFirstChar { it.uppercase() },
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                                 )
                             }
                         }
                     }
-                }
-            }
-
-            // Unsplash random / auto-update
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SettingsTextButton(
-                        label = if (isLoading) "Loading…" else "Get Random",
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        focusedContainerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ) { viewModel.fetchRandomUnsplashPhoto(unsplashTopicId) }
-
-                    SettingsTextButton(
-                        label = if (unsplashAutoUpdate) "Auto-Update: ON" else "Auto-Update: OFF",
-                        containerColor = if (unsplashAutoUpdate)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        focusedContainerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ) { viewModel.setUnsplashAutoUpdate(!unsplashAutoUpdate) }
-                }
-            }
-
-            // Unsplash search
-            item {
-                var query by remember { mutableStateOf("") }
-                val searchFocus = remember { FocusRequester() }
-                Text(
-                    "Search",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                )
-                BasicTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.focusRequester(searchFocus),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    decorationBox = { inner ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                    MaterialTheme.shapes.small
-                                )
-                                .padding(horizontal = 14.dp, vertical = 10.dp)
-                        ) {
-                            if (query.isEmpty()) {
-                                Text(
-                                    "Search Unsplash…",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                                )
-                            }
-                            inner()
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SettingsTextButton(
+                            label = if (isLoading) "Applying…" else "Apply Pixabay Wallpaper",
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            focusedContainerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.primary
+                        ) { viewModel.fetchPixabayWallpaper(pixabayCategory) }
+                        if (wallpaperSource == WallpaperSource.PIXABAY) {
+                            SettingsTextButton(
+                                label = "Refresh Now",
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                focusedContainerColor = MaterialTheme.colorScheme.primary
+                            ) { viewModel.fetchPixabayWallpaper(pixabayCategory) }
                         }
                     }
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SettingsTextButton("Search") { viewModel.searchUnsplash(query) }
-                    if (searchResults.isNotEmpty()) {
-                        SettingsTextButton(
-                            label = "Clear Results",
-                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                            focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
-                            contentColor = MaterialTheme.colorScheme.error
-                        ) { viewModel.clearUnsplashSearch() }
-                    }
-                }
-            }
-
-            // Unsplash search results
-            if (searchResults.isNotEmpty()) {
-                item {
                     Text(
-                        "Results",
+                        "Picks a random photo from your chosen category. Updates daily on app launch.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
-                items(searchResults.size) { index ->
-                    val photo = searchResults[index]
-                    Surface(
-                        onClick = { viewModel.setWallpaperImageUrl(photo.urls.full) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                photo.altDescription ?: "Untitled",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text(
-                                "Apply",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
+            }
+
+            // Status feedback
+            if (status != null) {
+                item {
+                    Text(
+                        text = status!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (status!!.startsWith("✓") || status!!.contains("applied", ignoreCase = true))
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.error
+                    )
                 }
             }
 
@@ -351,7 +242,7 @@ fun WallpaperTab(
                         containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
                         focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
                         contentColor = MaterialTheme.colorScheme.error
-                    ) { viewModel.setWallpaperImageUrl(null) }
+                    ) { viewModel.setWallpaperImageUrl(null, WallpaperSource.NONE) }
                 }
             }
 
@@ -395,9 +286,9 @@ private fun ColorPresetCard(
     modifier: Modifier = Modifier
 ) {
     val color = if (hex != null) {
-        runCatching { Color(android.graphics.Color.parseColor(hex)) }
-            .getOrDefault(Color.Black)
-    } else Color.Transparent
+        runCatching { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex)) }
+            .getOrDefault(androidx.compose.ui.graphics.Color.Black)
+    } else androidx.compose.ui.graphics.Color.Transparent
 
     Surface(
         onClick = onClick,

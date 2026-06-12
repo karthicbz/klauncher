@@ -8,6 +8,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class WallpaperSource(val key: String) {
+    NONE("none"),
+    SOLID_COLOR("color"),
+    LOCAL_IMAGE("local"),
+    BING("bing"),
+    PIXABAY("pixabay")
+}
+
 @Singleton
 class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
@@ -26,14 +34,15 @@ class UserPreferencesRepository @Inject constructor(
     private val _wallpaperImageUrl = MutableStateFlow(prefs.getString("wallpaper_image_url", null))
     val wallpaperImageUrl: StateFlow<String?> = _wallpaperImageUrl.asStateFlow()
 
-    private val _unsplashAccessKey = MutableStateFlow(prefs.getString("unsplash_access_key", null))
-    val unsplashAccessKey: StateFlow<String?> = _unsplashAccessKey.asStateFlow()
+    private val _wallpaperSource = MutableStateFlow(
+        prefs.getString("wallpaper_source", WallpaperSource.NONE.key)?.let { key ->
+            WallpaperSource.entries.firstOrNull { it.key == key }
+        } ?: WallpaperSource.NONE
+    )
+    val wallpaperSource: StateFlow<WallpaperSource> = _wallpaperSource.asStateFlow()
 
-    private val _unsplashTopicId = MutableStateFlow(prefs.getString("unsplash_topic_id", null))
-    val unsplashTopicId: StateFlow<String?> = _unsplashTopicId.asStateFlow()
-
-    private val _unsplashAutoUpdate = MutableStateFlow(prefs.getBoolean("unsplash_auto_update", false))
-    val unsplashAutoUpdate: StateFlow<Boolean> = _unsplashAutoUpdate.asStateFlow()
+    private val _pixabayCategory = MutableStateFlow(prefs.getString("pixabay_category", "nature"))
+    val pixabayCategory: StateFlow<String> = _pixabayCategory.asStateFlow()
 
     fun setLocation(lat: Float, lon: Float) {
         _latitude.value = lat
@@ -44,30 +53,37 @@ class UserPreferencesRepository @Inject constructor(
     fun setWallpaperColor(hex: String?) {
         _wallpaperColor.value = hex
         _wallpaperImageUrl.value = null
-        prefs.edit().putString("wallpaper_color", hex).remove("wallpaper_image_url").apply()
+        _wallpaperSource.value = if (hex != null) WallpaperSource.SOLID_COLOR else WallpaperSource.NONE
+        prefs.edit()
+            .putString("wallpaper_color", hex)
+            .remove("wallpaper_image_url")
+            .putString("wallpaper_source", _wallpaperSource.value.key)
+            .apply()
     }
 
-    fun setWallpaperImageUrl(url: String?) {
+    fun setWallpaperImageUrl(url: String?, source: WallpaperSource = WallpaperSource.LOCAL_IMAGE) {
         _wallpaperImageUrl.value = url
+        _wallpaperSource.value = if (url != null) source else WallpaperSource.NONE
         if (url != null) _wallpaperColor.value = null
         prefs.edit().putString("wallpaper_image_url", url).apply {
             if (url != null) remove("wallpaper_color")
+            putString("wallpaper_source", _wallpaperSource.value.key)
             apply()
         }
     }
 
-    fun setUnsplashAccessKey(key: String?) {
-        _unsplashAccessKey.value = key
-        prefs.edit().putString("unsplash_access_key", key).apply()
+    fun setWallpaperSource(source: WallpaperSource) {
+        _wallpaperSource.value = source
+        prefs.edit().putString("wallpaper_source", source.key).apply()
+        if (source == WallpaperSource.NONE) {
+            _wallpaperImageUrl.value = null
+            _wallpaperColor.value = null
+            prefs.edit().remove("wallpaper_image_url").remove("wallpaper_color").apply()
+        }
     }
 
-    fun setUnsplashTopicId(topicId: String?) {
-        _unsplashTopicId.value = topicId
-        prefs.edit().putString("unsplash_topic_id", topicId).apply()
-    }
-
-    fun setUnsplashAutoUpdate(enabled: Boolean) {
-        _unsplashAutoUpdate.value = enabled
-        prefs.edit().putBoolean("unsplash_auto_update", enabled).apply()
+    fun setPixabayCategory(category: String) {
+        _pixabayCategory.value = category
+        prefs.edit().putString("pixabay_category", category).apply()
     }
 }

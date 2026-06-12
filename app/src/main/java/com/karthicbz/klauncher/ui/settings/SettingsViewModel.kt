@@ -5,17 +5,22 @@ import androidx.lifecycle.viewModelScope
 import com.karthicbz.klauncher.data.db.CategoryDao
 import com.karthicbz.klauncher.data.model.CategoryEntity
 import com.karthicbz.klauncher.data.model.AppInfo
+import com.karthicbz.klauncher.data.remote.BingApi
+import com.karthicbz.klauncher.data.remote.PixabayApi
 import com.karthicbz.klauncher.repository.AppRepository
 import com.karthicbz.klauncher.repository.ThemeRepository
 import com.karthicbz.klauncher.repository.UserPreferencesRepository
+import com.karthicbz.klauncher.repository.WallpaperSource
 import com.karthicbz.klauncher.ui.theme.ThemeConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,18 +43,15 @@ class SettingsViewModel @Inject constructor(
     val longitude = userPreferencesRepository.longitude
     val wallpaperColor = userPreferencesRepository.wallpaperColor
     val wallpaperImageUrl = userPreferencesRepository.wallpaperImageUrl
-    val unsplashAccessKey = userPreferencesRepository.unsplashAccessKey
-    val unsplashTopicId = userPreferencesRepository.unsplashTopicId
-    val unsplashAutoUpdate = userPreferencesRepository.unsplashAutoUpdate
+    val wallpaperSource = userPreferencesRepository.wallpaperSource
+    val pixabayCategory = userPreferencesRepository.pixabayCategory
+    val pixabayCategories = PixabayApi.categories
 
-    private val _unsplashTopics = MutableStateFlow<List<com.karthicbz.klauncher.data.remote.UnsplashTopic>>(emptyList())
-    val unsplashTopics: StateFlow<List<com.karthicbz.klauncher.data.remote.UnsplashTopic>> = _unsplashTopics
+    private val _isLoadingWallpaper = MutableStateFlow(false)
+    val isLoadingWallpaper: StateFlow<Boolean> = _isLoadingWallpaper
 
-    private val _unsplashSearchResults = MutableStateFlow<List<com.karthicbz.klauncher.data.remote.UnsplashPhoto>>(emptyList())
-    val unsplashSearchResults: StateFlow<List<com.karthicbz.klauncher.data.remote.UnsplashPhoto>> = _unsplashSearchResults
-
-    private val _isLoadingUnsplash = MutableStateFlow(false)
-    val isLoadingUnsplash: StateFlow<Boolean> = _isLoadingUnsplash
+    private val _wallpaperStatus = MutableStateFlow<String?>(null)
+    val wallpaperStatus: StateFlow<String?> = _wallpaperStatus
 
     fun addCategory(name: String) {
         viewModelScope.launch {
@@ -82,7 +84,7 @@ class SettingsViewModel @Inject constructor(
                     val temp = categoriesList[index]
                     categoriesList[index] = categoriesList[targetIndex]
                     categoriesList[targetIndex] = temp
-                    
+
                     categoriesList.forEachIndexed { idx, cat ->
                         categoryDao.updateCategory(cat.copy(position = idx))
                     }
@@ -105,62 +107,16 @@ class SettingsViewModel @Inject constructor(
         userPreferencesRepository.setWallpaperColor(hex)
     }
 
-    fun setWallpaperImageUrl(url: String?) {
-        userPreferencesRepository.setWallpaperImageUrl(url)
+    fun setWallpaperImageUrl(url: String?, source: WallpaperSource = WallpaperSource.LOCAL_IMAGE) {
+        userPreferencesRepository.setWallpaperImageUrl(url, source)
     }
 
-    fun setUnsplashAccessKey(key: String?) {
-        userPreferencesRepository.setUnsplashAccessKey(key)
+    fun setWallpaperSource(source: WallpaperSource) {
+        userPreferencesRepository.setWallpaperSource(source)
     }
 
-    fun setUnsplashTopicId(topicId: String?) {
-        userPreferencesRepository.setUnsplashTopicId(topicId)
-    }
-
-    fun setUnsplashAutoUpdate(enabled: Boolean) {
-        userPreferencesRepository.setUnsplashAutoUpdate(enabled)
-    }
-
-    fun fetchUnsplashTopics() {
-        viewModelScope.launch {
-            val key = unsplashAccessKey.value ?: return@launch
-            _isLoadingUnsplash.value = true
-            try {
-                _unsplashTopics.value = com.karthicbz.klauncher.data.remote.UnsplashApi.getTopics(key)
-            } catch (_: Exception) { }
-            _isLoadingUnsplash.value = false
-        }
-    }
-
-    fun fetchRandomUnsplashPhoto(topicId: String? = null) {
-        viewModelScope.launch {
-            val key = unsplashAccessKey.value ?: return@launch
-            _isLoadingUnsplash.value = true
-            try {
-                val photo = com.karthicbz.klauncher.data.remote.UnsplashApi.getRandomPhoto(key, topicId)
-                photo?.let { setWallpaperImageUrl(it.urls.full) }
-            } catch (_: Exception) { }
-            _isLoadingUnsplash.value = false
-        }
-    }
-
-    fun searchUnsplash(query: String) {
-        viewModelScope.launch {
-            val key = unsplashAccessKey.value ?: return@launch
-            if (query.isBlank()) {
-                _unsplashSearchResults.value = emptyList()
-                return@launch
-            }
-            _isLoadingUnsplash.value = true
-            try {
-                _unsplashSearchResults.value = com.karthicbz.klauncher.data.remote.UnsplashApi.searchPhotos(key, query)
-            } catch (_: Exception) { }
-            _isLoadingUnsplash.value = false
-        }
-    }
-
-    fun clearUnsplashSearch() {
-        _unsplashSearchResults.value = emptyList()
+    fun setPixabayCategory(category: String) {
+        userPreferencesRepository.setPixabayCategory(category)
     }
 
     fun setLocation(lat: Float, lon: Float) {
@@ -180,5 +136,49 @@ class SettingsViewModel @Inject constructor(
                 onError(result.exceptionOrNull()?.message ?: "Unknown error")
             }
         }
+    }
+
+    fun fetchBingWallpaper() {
+        viewModelScope.launch {
+            _isLoadingWallpaper.value = true
+            _wallpaperStatus.value = null
+            try {
+                val url = withContext(Dispatchers.IO) { BingApi.getDailyWallpaper() }
+                if (url != null) {
+                    userPreferencesRepository.setWallpaperImageUrl(url, WallpaperSource.BING)
+                    _wallpaperStatus.value = "Bing wallpaper applied!"
+                } else {
+                    _wallpaperStatus.value = "Failed to fetch Bing wallpaper"
+                }
+            } catch (e: Exception) {
+                _wallpaperStatus.value = "Error: ${e.message}"
+            }
+            _isLoadingWallpaper.value = false
+        }
+    }
+
+    fun fetchPixabayWallpaper(category: String) {
+        viewModelScope.launch {
+            _isLoadingWallpaper.value = true
+            _wallpaperStatus.value = null
+            try {
+                val url = withContext(Dispatchers.IO) {
+                    PixabayApi.getWallpaper(PIXABAY_API_KEY, category)
+                }
+                if (url != null) {
+                    userPreferencesRepository.setWallpaperImageUrl(url, WallpaperSource.PIXABAY)
+                    _wallpaperStatus.value = "Pixabay wallpaper applied!"
+                } else {
+                    _wallpaperStatus.value = "No images found for this category"
+                }
+            } catch (e: Exception) {
+                _wallpaperStatus.value = "Error: ${e.message}"
+            }
+            _isLoadingWallpaper.value = false
+        }
+    }
+
+    companion object {
+        private const val PIXABAY_API_KEY = "PIXABAY_API_KEY_PLACEHOLDER"
     }
 }
