@@ -41,7 +41,7 @@ class UserPreferencesRepository @Inject constructor(
     )
     val wallpaperSource: StateFlow<WallpaperSource> = _wallpaperSource.asStateFlow()
 
-    private val _pixabayCategory = MutableStateFlow(prefs.getString("pixabay_category", "nature"))
+    private val _pixabayCategory = MutableStateFlow(prefs.getString("pixabay_category", "nature")!!)
     val pixabayCategory: StateFlow<String> = _pixabayCategory.asStateFlow()
 
     fun setLocation(lat: Float, lon: Float) {
@@ -65,11 +65,11 @@ class UserPreferencesRepository @Inject constructor(
         _wallpaperImageUrl.value = url
         _wallpaperSource.value = if (url != null) source else WallpaperSource.NONE
         if (url != null) _wallpaperColor.value = null
-        prefs.edit().putString("wallpaper_image_url", url).apply {
-            if (url != null) remove("wallpaper_color")
-            putString("wallpaper_source", _wallpaperSource.value.key)
-            apply()
-        }
+        val editor = prefs.edit()
+            .putString("wallpaper_image_url", url)
+            .putString("wallpaper_source", _wallpaperSource.value.key)
+        if (url != null) editor.remove("wallpaper_color")
+        editor.apply()
     }
 
     fun setWallpaperSource(source: WallpaperSource) {

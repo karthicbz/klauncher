@@ -151,7 +151,7 @@ class SettingsViewModel @Inject constructor(
                     _wallpaperStatus.value = "Failed to fetch Bing wallpaper"
                 }
             } catch (e: Exception) {
-                _wallpaperStatus.value = "Error: ${e.message}"
+                _wallpaperStatus.value = "${e::class.simpleName}: ${e.message}"
             }
             _isLoadingWallpaper.value = false
         }
@@ -172,7 +172,7 @@ class SettingsViewModel @Inject constructor(
                     _wallpaperStatus.value = "No images found for this category"
                 }
             } catch (e: Exception) {
-                _wallpaperStatus.value = "Error: ${e.message}"
+                _wallpaperStatus.value = "${e::class.simpleName}: ${e.message}"
             }
             _isLoadingWallpaper.value = false
         }
