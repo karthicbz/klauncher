@@ -3,9 +3,11 @@ package com.karthicbz.klauncher.ui.home.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,7 +36,9 @@ fun WatchNextCard(
                 model = program.posterArtUri,
                 contentDescription = program.title,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                placeholder = remember { ColorPainter(Color.DarkGray) },
+                error = remember { ColorPainter(Color(0xFF333333)) }
             )
 
             // Dark scrim at the bottom for text readability — flat, no blur

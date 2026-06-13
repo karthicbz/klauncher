@@ -65,6 +65,10 @@ class HomeViewModel @Inject constructor(
         appRepository.launchApp(packageName)
     }
 
+    fun refreshWatchNext() {
+        watchNextRepository.refresh()
+    }
+
     fun launchWatchNextProgram(programId: Long) {
         watchNextRepository.launchWatchNextProgram(programId)
     }

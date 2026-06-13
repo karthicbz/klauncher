@@ -10,11 +10,13 @@ import android.os.Handler
 import android.os.Looper
 import com.karthicbz.klauncher.data.model.WatchNextProgram
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,38 +24,41 @@ import javax.inject.Singleton
 class WatchNextRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    // WatchNextPrograms requires API 26 (Android 8.0)
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private val _programs = MutableStateFlow<List<WatchNextProgram>>(emptyList())
+
     private val watchNextUri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         TvContract.WatchNextPrograms.CONTENT_URI
     } else {
         null
     }
 
-    fun getWatchNextPrograms(): Flow<List<WatchNextProgram>> = callbackFlow {
+    init {
         val uri = watchNextUri
-        if (uri == null) {
-            trySend(emptyList())
-            awaitClose()
-            return@callbackFlow
-        }
-
-        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
-            override fun onChange(selfChange: Boolean) {
-                trySend(queryWatchNext())
+        if (uri != null) {
+            refresh()
+            val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    refresh()
+                }
+            }
+            try {
+                context.contentResolver.registerContentObserver(uri, true, observer)
+            } catch (_: Exception) {
             }
         }
+    }
 
-        try {
-            context.contentResolver.registerContentObserver(uri, true, observer)
-            trySend(queryWatchNext())
-        } catch (e: Exception) {
-            trySend(emptyList())
-        }
+    fun getWatchNextPrograms(): Flow<List<WatchNextProgram>> = _programs.onStart {
+        refresh()
+    }
 
-        awaitClose {
-            context.contentResolver.unregisterContentObserver(observer)
+    fun refresh() {
+        scope.launch {
+            _programs.value = queryWatchNext()
         }
-    }.flowOn(Dispatchers.IO)
+    }
 
     @Suppress("DEPRECATION")
     private fun queryWatchNext(): List<WatchNextProgram> {
@@ -68,7 +73,6 @@ class WatchNextRepository @Inject constructor(
             TvContract.WatchNextPrograms.COLUMN_SHORT_DESCRIPTION,
             TvContract.WatchNextPrograms.COLUMN_POSTER_ART_URI,
             TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS,
-            // Progress tracking columns — available API 26+
             TvContract.WatchNextPrograms.COLUMN_LAST_PLAYBACK_POSITION_MILLIS,
             TvContract.WatchNextPrograms.COLUMN_DURATION_MILLIS
         )
@@ -81,29 +85,36 @@ class WatchNextRepository @Inject constructor(
                 null,
                 "${TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS} DESC"
             )?.use { cursor ->
+                val idIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms._ID)
+                val pkgIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_PACKAGE_NAME)
+                val titleIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_TITLE)
+                val descIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_SHORT_DESCRIPTION)
+                val posterIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_POSTER_ART_URI)
+                val timeIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS)
+                val posIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_LAST_PLAYBACK_POSITION_MILLIS)
+                val durIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_DURATION_MILLIS)
+
                 while (cursor.moveToNext()) {
-                    val positionMs = cursor.getLong(6)
-                    val durationMs = cursor.getLong(7)
-                    // Compute 0–100 progress; clamp to valid range
+                    val positionMs = cursor.getLong(posIdx)
+                    val durationMs = cursor.getLong(durIdx)
                     val progress = if (durationMs > 0L) {
                         ((positionMs.toFloat() / durationMs) * 100).toInt().coerceIn(0, 100)
                     } else 0
 
                     programs.add(
                         WatchNextProgram(
-                            id = cursor.getLong(0),
-                            packageName = cursor.getString(1) ?: "",
-                            title = cursor.getString(2),
-                            description = cursor.getString(3),
-                            posterArtUri = cursor.getString(4),
+                            id = cursor.getLong(idIdx),
+                            packageName = cursor.getString(pkgIdx) ?: "",
+                            title = cursor.getString(titleIdx),
+                            description = cursor.getString(descIdx),
+                            posterArtUri = cursor.getString(posterIdx),
                             progress = progress,
-                            lastEngagementTime = cursor.getLong(5)
+                            lastEngagementTime = cursor.getLong(timeIdx)
                         )
                     )
                 }
             }
-        } catch (e: Exception) {
-            // Permission not granted or provider unavailable — return empty list
+        } catch (_: Exception) {
         }
         return programs
     }
@@ -116,8 +127,7 @@ class WatchNextRepository @Inject constructor(
             }
             try {
                 context.startActivity(intent)
-            } catch (e: Exception) {
-                // App that owns this program may have been uninstalled
+            } catch (_: Exception) {
             }
         }
     }

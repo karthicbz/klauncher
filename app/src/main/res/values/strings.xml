@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">klauncher</string>
+    <string name="continue_watching">Continue Watching</string>
+    <string name="continue_watching_empty">Watch a show or movie to see it here</string>
 </resources>

@@ -1,5 +1,9 @@
 package com.karthicbz.klauncher.ui.home
 
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,11 +19,15 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 
 import androidx.tv.material3.*
+import com.karthicbz.klauncher.R
 import com.karthicbz.klauncher.data.model.AppInfo
 import com.karthicbz.klauncher.ui.home.components.*
 import com.karthicbz.klauncher.ui.home.viewmodel.HomeViewModel as WeatherViewModel
@@ -38,6 +46,30 @@ fun HomeScreen(
     var showCategoryPickerForApp by remember { mutableStateOf<AppInfo?>(null) }
     var alphabetFilter by remember { mutableStateOf<Char?>(null) }
     var showAlphabetPicker by remember { mutableStateOf(false) }
+
+    // Runtime permission for reading TV watch-next programs (Continue Watching)
+    // READ_TV_LISTINGS is a dangerous permission on Android 13+ (API 33+)
+    if (Build.VERSION.SDK_INT >= 33) {
+        val context = LocalContext.current
+        var permissionRequested by remember { mutableStateOf(false) }
+        val permissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            if (granted) {
+                viewModel.refreshWatchNext()
+            }
+        }
+        LaunchedEffect(Unit) {
+            if (!permissionRequested &&
+                ContextCompat.checkSelfPermission(
+                    context, "android.permission.READ_TV_LISTINGS"
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionRequested = true
+                permissionLauncher.launch("android.permission.READ_TV_LISTINGS")
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -275,25 +307,32 @@ private fun HomeContent(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // Continue Watching row
-            if (state.watchNextPrograms.isNotEmpty()) {
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 48.dp)) {
-                        Text(
-                            text = "Continue Watching",
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
+            item {
+                Column(modifier = Modifier.padding(horizontal = 48.dp)) {
+                    Text(
+                        text = stringResource(R.string.continue_watching),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    if (state.watchNextPrograms.isNotEmpty()) {
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            items(state.watchNextPrograms) { program ->
+                            items(state.watchNextPrograms.take(20)) { program ->
                                 WatchNextCard(
                                     program = program,
                                     onClick = { onProgramClick(program.id) }
                                 )
                             }
                         }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.continue_watching_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
                     }
                 }
             }
