@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -10,6 +11,11 @@ plugins {
 }
 
 val localProperties = rootProject.file("local.properties")
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
 val pixabayApiKey: String = if (localProperties.exists()) {
     Properties().apply { load(localProperties.inputStream()) }
         .getProperty("pixabay.api.key", "")
@@ -30,6 +36,21 @@ android {
         buildConfigField("String", "PIXABAY_API_KEY", "\"$pixabayApiKey\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFileProp = keystoreProperties["storeFile"] as? String
+            val storePasswordProp = keystoreProperties["storePassword"] as? String
+            val keyAliasProp = keystoreProperties["keyAlias"] as? String
+            val keyPasswordProp = keystoreProperties["keyPassword"] as? String
+            if (storeFileProp != null && storePasswordProp != null && keyAliasProp != null && keyPasswordProp != null) {
+                storeFile = file(storeFileProp)
+                storePassword = storePasswordProp
+                keyAlias = keyAliasProp
+                keyPassword = keyPasswordProp
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -37,6 +58,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.findByName("release")
         }
     }
     compileOptions {
