@@ -160,7 +160,8 @@ private fun CategoryPickerOverlay(
                     scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
                     colors = ClickableSurfaceDefaults.colors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                        focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) {
                     Text(
@@ -232,7 +233,8 @@ private fun HomeContent(
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
                     colors = ClickableSurfaceDefaults.colors(
                         containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                        focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                        focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) {
                     Text(
@@ -247,7 +249,8 @@ private fun HomeContent(
                 shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
                 colors = ClickableSurfaceDefaults.colors(
                     containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                    focusedContainerColor = MaterialTheme.colorScheme.primary
+                    focusedContainerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
                 Text(
@@ -432,7 +435,8 @@ private fun AlphabetPickerOverlay(
                 scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
                 colors = ClickableSurfaceDefaults.colors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                    focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
                 Text(

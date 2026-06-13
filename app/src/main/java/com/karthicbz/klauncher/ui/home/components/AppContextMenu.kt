@@ -90,7 +90,8 @@ fun AppContextMenu(
                     scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
                     colors = ClickableSurfaceDefaults.colors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                        focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) {
                     Text(
@@ -116,7 +117,8 @@ private fun MenuButton(label: String, onClick: () -> Unit) {
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.03f),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surface,
-            focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Text(

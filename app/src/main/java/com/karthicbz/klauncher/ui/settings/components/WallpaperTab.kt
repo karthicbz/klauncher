@@ -295,7 +295,8 @@ private fun ColorPresetCard(
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                 else MaterialTheme.colorScheme.surface,
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
         modifier = modifier
     ) {

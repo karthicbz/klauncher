@@ -41,7 +41,8 @@ fun CategoriesTab(
                 scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
                 colors = ClickableSurfaceDefaults.colors(
                     containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                    focusedContainerColor = MaterialTheme.colorScheme.primary
+                    focusedContainerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
                 Text("+ Add Category", modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
@@ -318,7 +319,8 @@ private fun SettingsIconButton(icon: String, onClick: () -> Unit) {
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.1f),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Text(icon, modifier = Modifier.padding(8.dp))
