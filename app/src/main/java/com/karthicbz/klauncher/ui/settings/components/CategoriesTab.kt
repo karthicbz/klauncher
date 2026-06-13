@@ -73,7 +73,8 @@ fun CategoriesTab(
                             shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.small),
                             colors = ClickableSurfaceDefaults.colors(
                                 containerColor = Color.Transparent,
-                                focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                contentColor = MaterialTheme.colorScheme.onSurface
                             )
                         ) {
                             Column(modifier = Modifier.padding(4.dp)) {
