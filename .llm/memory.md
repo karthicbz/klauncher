@@ -26,6 +26,9 @@
 - Fixed theme active indicator (`ThemesTab.kt:56`): changed `theme.name == currentTheme.name` to `theme == currentTheme` so imported themes with the same name as a built-in don't incorrectly show as "✓ Active".
 - Fixed wallpaper image hidden by opaque `Surface` (`MainActivity.kt:63-66`): added conditional `color = if (wallpaperImageUrl != null) Color.Transparent else MaterialTheme.colorScheme.surface` so wallpaper shows through when set.
 - Mapped `accent`→`secondary` and `focusHighlight`→`tertiary` in `darkColorScheme` (`Theme.kt:34-35`): accent and focus highlight colors were defined in `ThemeConfig` and shown as swatches in the theme picker but never applied to the color scheme.
+- Fixed long-press on `AppCard` (`AppCard.kt`): moved key event handling from outer `Box` (which never received events because the focused `Surface` consumed them) to `onPreviewKeyEvent` on the `Surface`'s own modifier chain, so the long-press timer actually starts on `KeyDown` and can prevent `onClick` on `KeyUp`.
+- Replaced Unsplash wallpaper with Bing Daily + Pixabay: removed `UnsplashApi.kt`, created `BingApi.kt` and `PixabayApi.kt`, added `WallpaperSource` enum to `UserPreferencesRepository.kt`, rewrote `WallpaperTab.kt` with Bing toggle and Pixabay category selector.
+- Added explicit `SSLHandshakeException` catch in `SettingsViewModel.kt` so users get a friendly "check device date/time" message instead of a raw exception.
 
 ### In Progress
 - *(none)*
@@ -57,4 +60,9 @@
 - `app/src/main/java/com/karthicbz/klauncher/ui/settings/components/ThemesTab.kt`: Fixed focus trap in `TvImportDialog`, fixed theme active indicator comparison (`theme == currentTheme` instead of `name == name`).
 - `app/src/main/java/com/karthicbz/klauncher/MainActivity.kt`: Made `Surface` transparent when wallpaper is set so the image is visible.
 - `app/src/main/java/com/karthicbz/klauncher/ui/theme/Theme.kt`: Mapped `accent` → `secondary` and `focusHighlight` → `tertiary` in the color scheme (previously unused).
+- `app/src/main/java/com/karthicbz/klauncher/data/remote/PixabayApi.kt`: New — Pixabay API client for category-based wallpaper fetching.
+- `app/src/main/java/com/karthicbz/klauncher/data/remote/BingApi.kt`: New — Bing daily wallpaper API client.
+- `app/src/main/java/com/karthicbz/klauncher/repository/UserPreferencesRepository.kt`: Removed Unsplash prefs, added `WallpaperSource` enum, `pixabayCategory`, and source-tracking.
+- `app/src/main/java/com/karthicbz/klauncher/ui/settings/SettingsViewModel.kt`: Removed all Unsplash methods, added `fetchBingWallpaper()` and `fetchPixabayWallpaper()`.
+- `app/src/main/java/com/karthicbz/klauncher/ui/settings/components/WallpaperTab.kt`: Replaced Unsplash section with Bing daily toggle and Pixabay category selector.
 - `.llm/memory.md`: Updated with all changes.

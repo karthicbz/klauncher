@@ -150,6 +150,8 @@ class SettingsViewModel @Inject constructor(
                 } else {
                     _wallpaperStatus.value = "Failed to fetch Bing wallpaper"
                 }
+            } catch (e: javax.net.ssl.SSLHandshakeException) {
+                _wallpaperStatus.value = "SSL error: check device date/time is correct"
             } catch (e: Exception) {
                 _wallpaperStatus.value = "${e::class.simpleName}: ${e.message}"
             }
@@ -171,6 +173,8 @@ class SettingsViewModel @Inject constructor(
                 } else {
                     _wallpaperStatus.value = "No images found for this category"
                 }
+            } catch (e: javax.net.ssl.SSLHandshakeException) {
+                _wallpaperStatus.value = "SSL error: check device date/time is correct"
             } catch (e: Exception) {
                 _wallpaperStatus.value = "${e::class.simpleName}: ${e.message}"
             }
