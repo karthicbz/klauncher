@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.karthicbz.klauncher.data.db.CategoryDao
 import com.karthicbz.klauncher.data.model.CategoryEntity
 import com.karthicbz.klauncher.data.model.AppInfo
+import com.karthicbz.klauncher.BuildConfig
 import com.karthicbz.klauncher.data.remote.BingApi
 import com.karthicbz.klauncher.data.remote.PixabayApi
 import com.karthicbz.klauncher.repository.AppRepository
@@ -165,7 +166,7 @@ class SettingsViewModel @Inject constructor(
             _wallpaperStatus.value = null
             try {
                 val url = withContext(Dispatchers.IO) {
-                    PixabayApi.getWallpaper(PIXABAY_API_KEY, category)
+                    PixabayApi.getWallpaper(BuildConfig.PIXABAY_API_KEY, category)
                 }
                 if (url != null) {
                     userPreferencesRepository.setWallpaperImageUrl(url, WallpaperSource.PIXABAY)
@@ -182,7 +183,5 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    companion object {
-        private const val PIXABAY_API_KEY = "PIXABAY_API_KEY_PLACEHOLDER"
-    }
+    companion object {}
 }

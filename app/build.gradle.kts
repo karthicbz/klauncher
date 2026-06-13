@@ -7,6 +7,12 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val localProperties = rootProject.file("local.properties")
+val pixabayApiKey: String = if (localProperties.exists()) {
+    java.util.Properties().apply { load(localProperties.inputStream()) }
+        .getProperty("pixabay.api.key", "")
+} else ""
+
 android {
     namespace = "com.karthicbz.klauncher"
     compileSdk = 36
@@ -19,6 +25,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "PIXABAY_API_KEY", "\"$pixabayApiKey\"")
     }
 
     buildTypes {
@@ -39,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
