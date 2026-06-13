@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -9,7 +11,7 @@ plugins {
 
 val localProperties = rootProject.file("local.properties")
 val pixabayApiKey: String = if (localProperties.exists()) {
-    java.util.Properties().apply { load(localProperties.inputStream()) }
+    Properties().apply { load(localProperties.inputStream()) }
         .getProperty("pixabay.api.key", "")
 } else ""
 
