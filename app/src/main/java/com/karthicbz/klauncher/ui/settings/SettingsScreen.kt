@@ -55,9 +55,7 @@ fun SettingsScreen(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                         else Color.Transparent,
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
                         focusedContentColor = MaterialTheme.colorScheme.onSurface
                     ),
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),

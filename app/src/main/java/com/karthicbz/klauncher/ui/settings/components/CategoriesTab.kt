@@ -91,12 +91,11 @@ fun CategoriesTab(
                             SettingsIconButton("▼") { viewModel.reorderCategory(category, moveUp = false) }
                             SettingsTextButton("Rename") { showRenameDialog = category }
                             if (!category.isSystem) {
-                                SettingsTextButton(
-                                    label = "Delete",
-                                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                                    focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
-                                    contentColor = MaterialTheme.colorScheme.error
-                                ) { showDeleteDialog = category }
+                            SettingsTextButton(
+                                label = "Delete",
+                                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                                focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                            ) { showDeleteDialog = category }
                             }
                         }
                     }
@@ -194,8 +193,7 @@ private fun TvConfirmDialog(
                 SettingsTextButton(
                     label = confirmLabel,
                     containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                    focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
-                    contentColor = MaterialTheme.colorScheme.error
+                    focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
                 ) { onConfirm() }
             }
         }
@@ -275,8 +273,7 @@ private fun TvInputDialog(
                     SettingsTextButton(
                         label = confirmLabel,
                         containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        focusedContainerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.primary
+                        focusedContainerColor = MaterialTheme.colorScheme.primary
                     ) { onConfirm(text) }
                 }
         }

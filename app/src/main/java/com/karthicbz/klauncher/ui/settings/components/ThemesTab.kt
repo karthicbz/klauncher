@@ -62,9 +62,7 @@ fun ThemesTab(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                         else MaterialTheme.colorScheme.surface,
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (isActive)
-                            MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
                     shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.medium),
                     modifier = Modifier.fillMaxWidth()

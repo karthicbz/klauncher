@@ -201,8 +201,7 @@ fun WallpaperTab(
                         SettingsTextButton(
                             label = if (isLoading) "Applying…" else "Apply Pixabay Wallpaper",
                             containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                            focusedContainerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.primary
+                            focusedContainerColor = MaterialTheme.colorScheme.primary
                         ) { viewModel.fetchPixabayWallpaper(pixabayCategory) }
                         if (wallpaperSource == WallpaperSource.PIXABAY) {
                             SettingsTextButton(
@@ -240,8 +239,7 @@ fun WallpaperTab(
                     SettingsTextButton(
                         label = "Clear Image Wallpaper",
                         containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                        focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
-                        contentColor = MaterialTheme.colorScheme.error
+                        focusedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
                     ) { viewModel.setWallpaperImageUrl(null, WallpaperSource.NONE) }
                 }
             }
