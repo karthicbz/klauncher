@@ -24,7 +24,7 @@ fun SettingsScreen(
 
     var selectedTab by remember { mutableStateOf(0) }
 
-    val tabs = listOf("Categories", "App Visibility", "Themes & Styles", "Weather", "Wallpaper", "About")
+    val tabs = listOf("Categories", "App Visibility", "Themes & Styles", "Weather", "Wallpaper", "Data Usage", "About")
 
     Row(
         modifier = Modifier
@@ -105,7 +105,8 @@ fun SettingsScreen(
                 2 -> ThemesTab(builtInThemes, currentTheme, viewModel)
                 3 -> WeatherSettingsTab(viewModel)
                 4 -> WallpaperTab(viewModel)
-                5 -> AboutTab()
+                5 -> DataUsageTab()
+                6 -> AboutTab()
             }
         }
     }

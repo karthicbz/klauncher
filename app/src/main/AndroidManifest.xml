@@ -12,6 +12,10 @@
     <!-- Dangerous permission required on API 33+ to read TvContract.WatchNextPrograms -->
     <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
 
+    <!-- For per-app data usage (NetworkStatsManager) — user grants via Usage Access in system settings -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
