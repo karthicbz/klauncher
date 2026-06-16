@@ -66,31 +66,38 @@ class WatchNextRepository @Inject constructor(
         val uri = watchNextUri ?: return emptyList()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return emptyList()
 
-        val projection = arrayOf(
-            TvContract.WatchNextPrograms._ID,
-            TvContract.WatchNextPrograms.COLUMN_PACKAGE_NAME,
-            TvContract.WatchNextPrograms.COLUMN_TITLE,
-            TvContract.WatchNextPrograms.COLUMN_SHORT_DESCRIPTION,
-            TvContract.WatchNextPrograms.COLUMN_POSTER_ART_URI,
-            TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS,
-            TvContract.WatchNextPrograms.COLUMN_LAST_PLAYBACK_POSITION_MILLIS,
-            TvContract.WatchNextPrograms.COLUMN_DURATION_MILLIS
-        )
+        val projection = buildList {
+            add(TvContract.WatchNextPrograms._ID)
+            add(TvContract.WatchNextPrograms.COLUMN_PACKAGE_NAME)
+            add(TvContract.WatchNextPrograms.COLUMN_TITLE)
+            add(TvContract.WatchNextPrograms.COLUMN_SHORT_DESCRIPTION)
+            add(TvContract.WatchNextPrograms.COLUMN_POSTER_ART_URI)
+            // COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS was added in API 28
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                add(TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS)
+            }
+            add(TvContract.WatchNextPrograms.COLUMN_LAST_PLAYBACK_POSITION_MILLIS)
+            add(TvContract.WatchNextPrograms.COLUMN_DURATION_MILLIS)
+        }.toTypedArray()
 
         try {
+            val sortOrder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                "${TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS} DESC"
+            } else null
             context.contentResolver.query(
                 uri,
                 projection,
                 null,
                 null,
-                "${TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS} DESC"
+                sortOrder
             )?.use { cursor ->
                 val idIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms._ID)
                 val pkgIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_PACKAGE_NAME)
                 val titleIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_TITLE)
                 val descIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_SHORT_DESCRIPTION)
                 val posterIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_POSTER_ART_URI)
-                val timeIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS)
+                // COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS added in API 28; fall back to -1 on API 26-27
+                val timeIdx = cursor.getColumnIndex(TvContract.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS)
                 val posIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_LAST_PLAYBACK_POSITION_MILLIS)
                 val durIdx = cursor.getColumnIndexOrThrow(TvContract.WatchNextPrograms.COLUMN_DURATION_MILLIS)
 
@@ -109,7 +116,7 @@ class WatchNextRepository @Inject constructor(
                             description = cursor.getString(descIdx),
                             posterArtUri = cursor.getString(posterIdx),
                             progress = progress,
-                            lastEngagementTime = cursor.getLong(timeIdx)
+                            lastEngagementTime = if (timeIdx >= 0) cursor.getLong(timeIdx) else 0L
                         )
                     )
                 }
