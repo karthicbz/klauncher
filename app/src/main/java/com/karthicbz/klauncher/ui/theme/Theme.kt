@@ -25,15 +25,43 @@ fun KlauncherTheme(
     config: ThemeConfig = DefaultThemeConfig,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = darkColorScheme(
-        background = Color(android.graphics.Color.parseColor(config.colors.background)),
-        surface = Color(android.graphics.Color.parseColor(config.colors.surface)),
-        onSurface = Color(android.graphics.Color.parseColor(config.colors.onSurface)),
-        primary = Color(android.graphics.Color.parseColor(config.colors.primary)),
-        onPrimary = Color(android.graphics.Color.parseColor(config.colors.onPrimary)),
-        secondary = Color(android.graphics.Color.parseColor(config.colors.accent)),
-        tertiary = Color(android.graphics.Color.parseColor(config.colors.focusHighlight))
+    val bgRgb = android.graphics.Color.parseColor(config.colors.background)
+    val bgR = android.graphics.Color.red(bgRgb) / 255.0
+    val bgG = android.graphics.Color.green(bgRgb) / 255.0
+    val bgB = android.graphics.Color.blue(bgRgb) / 255.0
+    val isLightTheme = (0.2126 * bgR + 0.7152 * bgG + 0.0722 * bgB) > 0.5
+
+    val themeColors = arrayOf(
+        Color(android.graphics.Color.parseColor(config.colors.background)),
+        Color(android.graphics.Color.parseColor(config.colors.surface)),
+        Color(android.graphics.Color.parseColor(config.colors.onSurface)),
+        Color(android.graphics.Color.parseColor(config.colors.primary)),
+        Color(android.graphics.Color.parseColor(config.colors.onPrimary)),
+        Color(android.graphics.Color.parseColor(config.colors.accent)),
+        Color(android.graphics.Color.parseColor(config.colors.focusHighlight))
     )
+
+    val colorScheme = if (isLightTheme) {
+        lightColorScheme(
+            background = themeColors[0],
+            surface = themeColors[1],
+            onSurface = themeColors[2],
+            primary = themeColors[3],
+            onPrimary = themeColors[4],
+            secondary = themeColors[5],
+            tertiary = themeColors[6]
+        )
+    } else {
+        darkColorScheme(
+            background = themeColors[0],
+            surface = themeColors[1],
+            onSurface = themeColors[2],
+            primary = themeColors[3],
+            onPrimary = themeColors[4],
+            secondary = themeColors[5],
+            tertiary = themeColors[6]
+        )
+    }
 
     val shapes = Shapes(
         medium = RoundedCornerShape(config.shapes.cardCornerRadius.dp),

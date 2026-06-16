@@ -50,6 +50,13 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
 
             KlauncherTheme(config = currentTheme) {
+                val bg = MaterialTheme.colorScheme.background
+                val bgLuminance = 0.2126f * bg.red + 0.7152f * bg.green + 0.0722f * bg.blue
+                val wallpaperScrim = if (bgLuminance > 0.5f)
+                    androidx.compose.ui.graphics.Color.White.copy(alpha = 0.45f)
+                else
+                    androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+
                 Box(modifier = Modifier.fillMaxSize()) {
                     if (wallpaperImageUrl != null) {
                         Image(
@@ -62,6 +69,11 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(wallpaperScrim)
+                        )
                     }
                     Surface(
                         modifier = Modifier.fillMaxSize(),
@@ -71,7 +83,8 @@ class MainActivity : ComponentActivity() {
                                 androidx.compose.ui.graphics.Color.Transparent
                             } else {
                                 MaterialTheme.colorScheme.surface
-                            }
+                            },
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         )
                     ) {
                         Box(
